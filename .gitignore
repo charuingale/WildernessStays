@@ -1,0 +1,15 @@
+node_modules/
+dist/
+bin/
+obj/
+.vs/
+.vite/
+.env
+*.log
+.DS_Store
+
+# legacy pre-split folders (delete when unlocked)
+/backend/
+/frontend/
+/backend-dotnet/
+/frontend-dotnet/
