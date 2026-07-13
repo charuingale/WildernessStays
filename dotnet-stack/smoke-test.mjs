@@ -97,5 +97,29 @@ ok('cancelled booking frees the room', r.body.rooms.find((x) => x.id === room.id
 r = await req(`/bookings/${bookingId}`, { method: 'DELETE', token: guest });
 ok('guest deletes own booking', r.status === 200);
 
+// 10. cancellation policy
+const far = { ...payload, checkIn: day(200), checkOut: day(202) };
+r = await req('/bookings', { method: 'POST', token: guest, body: JSON.stringify(far) });
+const farId = r.body.id;
+r = await req(`/bookings/${farId}/cancellation-quote`, { token: guest });
+ok('quote: free cancellation when 7+ days out', r.status === 200 && r.body.cancellable === true && r.body.feePercent === 0 && Number(r.body.refund) > 0);
+r = await req(`/bookings/${farId}/cancel`, { method: 'POST', token: guest });
+ok('cancel: full refund recorded', r.status === 200 && r.body.status === 'cancelled' && Number(r.body.cancellationFee) === 0 && !!r.body.refundRef);
+await req(`/bookings/${farId}`, { method: 'DELETE', token: guest });
+
+r = await req(`/hotels/${hotel.id}?checkIn=${day(3)}&checkOut=${day(5)}`);
+const nearRoom = r.body.rooms.find((x) => x.available);
+if (nearRoom) {
+  const near = { ...payload, roomId: nearRoom.id, checkIn: day(3), checkOut: day(5) };
+  r = await req('/bookings', { method: 'POST', token: guest, body: JSON.stringify(near) });
+  const nearId = r.body.id;
+  const nearTotal = Number(r.body.totalPrice);
+  r = await req(`/bookings/${nearId}/cancellation-quote`, { token: guest });
+  ok('quote: 70% fee within 7 days of check-in', r.status === 200 && r.body.feePercent === 70);
+  r = await req(`/bookings/${nearId}/cancel`, { method: 'POST', token: guest });
+  ok('cancel: 30% refund within 7 days', r.status === 200 && Math.abs(Number(r.body.refundAmount) - nearTotal * 0.3) < 0.02);
+  await req(`/bookings/${nearId}`, { method: 'DELETE', token: guest });
+}
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

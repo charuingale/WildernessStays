@@ -22,3 +22,7 @@ public record CalendarDay(string Date, int Available, int Total);
 public record AuthUser(Guid Id, string Name, string Email, string Role);
 
 public record AuthResult(string Token, AuthUser User);
+
+public record CancellationQuote(
+    bool Cancellable, string? Reason, int DaysUntilCheckIn,
+    int FeePercent, decimal Fee, decimal Refund, string FreeCancellationUntil);

@@ -178,7 +178,12 @@ export default function AdminBookingsPage() {
                     <div>{formatDate(b.checkOut)}</div>
                   </td>
                   <td>{b.guests}</td>
-                  <td><strong>{formatMoney(b.totalPrice)}</strong></td>
+                  <td>
+                    <strong>{formatMoney(b.totalPrice)}</strong>
+                    {b.status === 'cancelled' && b.refundAmount != null && (
+                      <div className="b-sub">↩ {formatMoney(b.refundAmount)} refunded</div>
+                    )}
+                  </td>
                   <td><span className={`status-badge ${b.status}`}>{b.status}</span></td>
                   <td>
                     <div className="row-actions">

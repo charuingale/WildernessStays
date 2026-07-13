@@ -22,6 +22,53 @@ public class BookingService(
 {
     private static int Nights(DateOnly checkIn, DateOnly checkOut) => checkOut.DayNumber - checkIn.DayNumber;
 
+    /// <summary>Cancellation policy: free until 7 days before check-in, then a 70% fee.</summary>
+    public const int FreeCancellationDaysBefore = 7;
+    public const int LateCancellationFeePercent = 70;
+
+    public static CancellationQuote QuoteFor(Booking booking)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var daysUntil = booking.CheckIn.DayNumber - today.DayNumber;
+        var freeUntil = booking.CheckIn.AddDays(-FreeCancellationDaysBefore).ToString("yyyy-MM-dd");
+
+        if (booking.Status == "cancelled")
+            return new CancellationQuote(false, "This booking is already cancelled", daysUntil, 0, 0, 0, freeUntil);
+        if (daysUntil < 1)
+            return new CancellationQuote(false, "Bookings cannot be cancelled on or after the check-in date", daysUntil, 0, 0, 0, freeUntil);
+
+        var feePercent = daysUntil >= FreeCancellationDaysBefore ? 0 : LateCancellationFeePercent;
+        var fee = Math.Round(booking.TotalPrice * feePercent / 100m, 2);
+        return new CancellationQuote(true, null, daysUntil, feePercent, fee,
+            Math.Round(booking.TotalPrice - fee, 2), freeUntil);
+    }
+
+    public async Task<CancellationQuote> QuoteAsync(Guid id, Guid userId, bool isAdmin) =>
+        QuoteFor(await FindOwnedAsync(id, userId, isAdmin));
+
+    /// <summary>Cancel under the policy: refund what's due, keep the fee, free the room.</summary>
+    public async Task<Booking> CancelAsync(Guid id, Guid userId, bool isAdmin)
+    {
+        var booking = await FindOwnedAsync(id, userId, isAdmin);
+        var quote = QuoteFor(booking);
+        if (!quote.Cancellable) throw new DomainValidationException(quote.Reason!);
+
+        var (refundRef, _) = await payments.RefundAsync(quote.Refund, booking.PaymentRef);
+        booking.Status = "cancelled";
+        booking.CancelledAt = DateTime.UtcNow;
+        booking.CancellationFee = quote.Fee;
+        booking.RefundAmount = quote.Refund;
+        booking.RefundRef = refundRef;
+        booking.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        await hotels.InvalidateCacheAsync();
+        logger.LogInformation("Booking {Id} cancelled — refunded {Refund:F2}, fee {Fee:F2}", id, quote.Refund, quote.Fee);
+        await events.BookingUpdatedAsync(booking);
+        await events.AvailabilityChangedAsync(booking.HotelId);
+        return booking;
+    }
+
     private void AssertOwnership(Booking booking, Guid userId, bool isAdmin)
     {
         if (!isAdmin && booking.UserId != userId)
@@ -120,6 +167,10 @@ public class BookingService(
     {
         var booking = await FindOwnedAsync(id, userId, isAdmin);
 
+        // Cancellations always go through the policy, even via PATCH.
+        if (dto.Status == "cancelled" && booking.Status != "cancelled")
+            return await CancelAsync(id, userId, isAdmin);
+
         var checkIn = dto.CheckIn ?? booking.CheckIn;
         var checkOut = dto.CheckOut ?? booking.CheckOut;
         var status = dto.Status ?? booking.Status;
@@ -147,6 +198,15 @@ public class BookingService(
         booking.Status = status;
         booking.SpecialRequests = dto.SpecialRequests ?? booking.SpecialRequests;
         booking.TotalPrice = (booking.Room?.PricePerNight ?? booking.Hotel!.PricePerNight) * nights;
+
+        // Re-activating a cancelled booking clears its cancellation record.
+        if (booking.CancelledAt is not null && status != "cancelled")
+        {
+            booking.CancelledAt = null;
+            booking.CancellationFee = null;
+            booking.RefundAmount = null;
+            booking.RefundRef = null;
+        }
         booking.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
@@ -174,7 +234,7 @@ public class BookingService(
         static string Esc(object? v) => $"\"{(v?.ToString() ?? "").Replace("\"", "\"\"")}\"";
         var sb = new StringBuilder();
         sb.AppendLine(string.Join(',', "Booking ID", "Hotel", "Room", "Location", "Guest", "Email", "Phone",
-            "Check-in", "Check-out", "Guests", "Total (CAD)", "Status", "Payment Ref", "Created"));
+            "Check-in", "Check-out", "Guests", "Total (CAD)", "Status", "Cancellation Fee", "Refund", "Payment Ref", "Created"));
         foreach (var b in rows)
         {
             sb.AppendLine(string.Join(',', new[]
@@ -184,6 +244,7 @@ public class BookingService(
                 Esc(b.GuestName), Esc(b.Email), Esc(b.Phone),
                 Esc(b.CheckIn.ToString("yyyy-MM-dd")), Esc(b.CheckOut.ToString("yyyy-MM-dd")),
                 Esc(b.Guests), Esc(b.TotalPrice.ToString("F2")), Esc(b.Status),
+                Esc(b.CancellationFee?.ToString("F2")), Esc(b.RefundAmount?.ToString("F2")),
                 Esc(b.PaymentRef), Esc(b.CreatedAt.ToString("o")),
             }));
         }

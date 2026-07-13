@@ -47,6 +47,19 @@ cd backend
 npm run smoke              # 17 end-to-end checks
 ```
 
+## Cancellation policy
+
+Free cancellation until **7 days before check-in** (100% refund). Within 7 days of
+check-in, a **70% cancellation fee** applies (30% refunded). Bookings can't be
+cancelled on or after the check-in date. Cancelled bookings record the fee, refund
+amount, refund reference, and timestamp; refunds go through Stripe when configured,
+mock references otherwise.
+
+```
+GET  /api/bookings/:id/cancellation-quote   preview fee & refund before confirming
+POST /api/bookings/:id/cancel               cancel under the policy
+```
+
 ## View the database
 
 ```bash

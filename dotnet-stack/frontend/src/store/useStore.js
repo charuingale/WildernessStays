@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { api, ApiError, connectSocket, setAuthToken, setUnauthorizedHandler } from '../api/client';
 import seedHotels from '../data/hotels.json';
 import { todayISO, nightsBetween, rangesOverlap } from '../utils/dates';
+import { localCancellationQuote } from '../utils/policy';
 
 /* Seed hotels + rooms get stable local ids so offline mode works deterministically. */
 const localHotels = seedHotels.map((h, i) => ({
@@ -384,6 +385,63 @@ export const useStore = create(
             get().toast(err.message, 'error');
             throw err;
           }
+        }
+      },
+
+      /** Refund/fee preview for cancelling a booking today. */
+      async getCancellationQuote(id) {
+        try {
+          return await api(`/bookings/${id}/cancellation-quote`);
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 0) {
+            const booking = get().localBookings.find((b) => b.id === id);
+            if (booking) return localCancellationQuote(booking);
+          }
+          throw err;
+        }
+      },
+
+      /** Cancel under the policy; returns the cancelled booking. */
+      async cancelBooking(id) {
+        set({ submitting: true });
+        try {
+          const booking = await api(`/bookings/${id}/cancel`, { method: 'POST' });
+          set({ submitting: false });
+          get().toast(
+            Number(booking.refundAmount) > 0
+              ? `Cancelled — refund of ${new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(booking.refundAmount)} on its way`
+              : 'Booking cancelled',
+            'success',
+          );
+          get().refreshBookingViews();
+          get().loadHotels({ silent: true });
+          return booking;
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 0) {
+            const booking = get().localBookings.find((b) => b.id === id);
+            const q = booking && localCancellationQuote(booking);
+            if (!q || !q.cancellable) {
+              set({ submitting: false });
+              get().toast(q?.reason || 'Booking not found', 'error');
+              throw new Error(q?.reason || 'not cancellable');
+            }
+            set((s) => ({
+              submitting: false,
+              localBookings: s.localBookings.map((b) =>
+                b.id === id
+                  ? { ...b, status: 'cancelled', cancelledAt: new Date().toISOString(),
+                      cancellationFee: q.fee, refundAmount: q.refund, refundRef: `mock_re_local` }
+                  : b,
+              ),
+            }));
+            get().toast(`Cancelled — ${q.refund.toFixed(2)} CAD refunded (saved locally)`, 'success');
+            get().refreshBookingViews();
+            get().loadHotels({ silent: true });
+            return get().localBookings.find((b) => b.id === id);
+          }
+          set({ submitting: false });
+          get().toast(err.message, 'error');
+          throw err;
         }
       },
 

@@ -66,6 +66,10 @@ public class Booking
     public decimal TotalPrice { get; set; }
     public string Status { get; set; } = "confirmed";
     public string? PaymentRef { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public decimal? CancellationFee { get; set; }
+    public decimal? RefundAmount { get; set; }
+    public string? RefundRef { get; set; }
     public string? SpecialRequests { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

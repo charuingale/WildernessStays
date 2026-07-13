@@ -32,6 +32,14 @@ public class BookingsController(BookingService bookings) : ControllerBase
             $"bookings-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.csv");
     }
 
+    [HttpGet("{id:guid}/cancellation-quote")]
+    public async Task<IActionResult> Quote(Guid id) =>
+        Ok(await bookings.QuoteAsync(id, CurrentUserId, IsAdmin));
+
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id) =>
+        Ok(await bookings.CancelAsync(id, CurrentUserId, IsAdmin));
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> FindOne(Guid id) =>
         Ok(await bookings.FindOwnedAsync(id, CurrentUserId, IsAdmin));

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { todayISO, nightsBetween, formatMoney } from '../utils/dates';
+import { todayISO, nightsBetween, formatMoney, formatDate } from '../utils/dates';
+import { freeCancellationUntil, CANCEL_POLICY } from '../utils/policy';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[+\d][\d\s().-]{6,}$/;
@@ -183,6 +184,13 @@ export default function BookingForm({ hotel, room, onBooked, range }) {
         </span>
         <span className="t-value">{nights > 0 && room ? formatMoney(total) : '—'}</span>
       </div>
+
+      {nights > 0 && (
+        <p className="policy-note">
+          Free cancellation until <strong>{formatDate(freeCancellationUntil(form.checkIn))}</strong>.
+          Within {CANCEL_POLICY.freeUntilDaysBefore} days of check-in, a {CANCEL_POLICY.lateFeePercent}% fee applies.
+        </p>
+      )}
 
       <button type="submit" className="btn btn-timber" style={{ width: '100%' }} disabled={submitting || soldOut || noRoom}>
         {soldOut

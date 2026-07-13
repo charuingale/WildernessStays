@@ -37,6 +37,17 @@ export class BookingsController {
     res.send(csv);
   }
 
+  @Get(':id/cancellation-quote')
+  quote(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.bookingsService.quote(id, user);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(200)
+  cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.bookingsService.cancel(id, user);
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     return this.bookingsService.findOneOwned(id, user);

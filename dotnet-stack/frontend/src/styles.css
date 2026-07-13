@@ -545,3 +545,21 @@ table.booking-table { width: 100%; border-collapse: collapse; min-width: 860px; 
 @media (max-width: 760px) {
   .contact-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------- Cancellation policy ---------- */
+.policy-note {
+  margin-bottom: 12px; font-size: 0.76rem; color: var(--slate);
+  background: rgba(74,122,82,0.08); border: 1px dashed rgba(74,122,82,0.3);
+  border-radius: 10px; padding: 9px 12px;
+}
+.quote-box {
+  background: var(--parchment-card); border: 1px solid var(--timber-pale);
+  border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+}
+.quote-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--ink); }
+.quote-row.fee span:last-child { color: var(--danger); font-weight: 600; }
+.quote-row.refund {
+  border-top: 1px dashed var(--timber-pale); padding-top: 8px;
+  font-weight: 700; font-family: var(--serif); font-size: 1.05rem; color: var(--forest-deep);
+}
+.refund-note { font-size: 0.8rem; font-weight: 600; color: var(--success); }

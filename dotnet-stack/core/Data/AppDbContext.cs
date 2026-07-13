@@ -64,6 +64,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("bookings");
             e.Property(b => b.TotalPrice).HasPrecision(10, 2);
+            e.Property(b => b.CancellationFee).HasPrecision(10, 2);
+            e.Property(b => b.RefundAmount).HasPrecision(10, 2);
             e.HasOne(b => b.Room).WithMany().HasForeignKey(b => b.RoomId).OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(b => new { b.RoomId, b.CheckIn, b.CheckOut });
         });

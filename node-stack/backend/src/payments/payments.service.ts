@@ -41,4 +41,32 @@ export class PaymentsService {
     const intent = (await res.json()) as { id: string };
     return { ref: intent.id, provider: 'stripe' };
   }
+
+  /** Refund (part of) a charge. Mock mode issues a mock reference. */
+  async refund(amountCad: number, paymentRef: string): Promise<{ ref: string; provider: string }> {
+    if (amountCad <= 0) return { ref: 'no_refund_due', provider: 'none' };
+    if (!this.stripeKey || !paymentRef || paymentRef.startsWith('mock_')) {
+      const ref = `mock_re_${randomUUID().slice(0, 12)}`;
+      this.logger.log(`Mock refund of CAD ${amountCad.toFixed(2)} for ${paymentRef} — ${ref}`);
+      return { ref, provider: 'mock' };
+    }
+    const body = new URLSearchParams({
+      payment_intent: paymentRef,
+      amount: String(Math.round(amountCad * 100)),
+    });
+    const res = await fetch('https://api.stripe.com/v1/refunds', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    });
+    if (!res.ok) {
+      this.logger.error(`Stripe refund error: ${await res.text()}`);
+      throw new Error('Refund processing failed');
+    }
+    const refund = (await res.json()) as { id: string };
+    return { ref: refund.id, provider: 'stripe' };
+  }
 }

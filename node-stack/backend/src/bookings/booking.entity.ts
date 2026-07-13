@@ -64,6 +64,18 @@ export class Booking {
   @Column({ nullable: true })
   paymentRef: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  cancelledAt: Date | null;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  cancellationFee: number | null;
+
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  refundAmount: number | null;
+
+  @Column({ nullable: true })
+  refundRef: string;
+
   @Column('text', { nullable: true })
   specialRequests: string;
 

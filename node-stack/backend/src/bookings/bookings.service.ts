@@ -16,6 +16,19 @@ import type { JwtPayload } from '../auth/auth.service';
 
 const MS_PER_DAY = 86_400_000;
 
+/** Cancellation policy: free until 7 days before check-in, then a 70% fee. */
+export const CANCELLATION_POLICY = { freeUntilDaysBefore: 7, lateFeePercent: 70 };
+
+export interface CancellationQuote {
+  cancellable: boolean;
+  reason: string | null;
+  daysUntilCheckIn: number;
+  feePercent: number;
+  fee: number;
+  refund: number;
+  freeCancellationUntil: string;
+}
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -133,6 +146,11 @@ export class BookingsService {
   async update(id: string, dto: UpdateBookingDto, user: JwtPayload): Promise<Booking> {
     const booking = await this.findOne(id);
     this.assertOwnership(booking, user);
+
+    // Cancellations always go through the policy, even via PATCH.
+    if (dto.status === 'cancelled' && booking.status !== 'cancelled') {
+      return this.cancel(id, user);
+    }
     const merged = { ...booking, ...dto };
     const nights = this.nights(merged.checkIn, merged.checkOut);
 
@@ -163,7 +181,71 @@ export class BookingsService {
     const nightlyRate = Number(booking.room?.pricePerNight ?? booking.hotel.pricePerNight);
     merged.totalPrice = nightlyRate * nights;
 
+    // Re-activating a cancelled booking clears its cancellation record.
+    if (booking.status === 'cancelled' && merged.status !== 'cancelled') {
+      merged.cancelledAt = null;
+      merged.cancellationFee = null;
+      merged.refundAmount = null;
+      merged.refundRef = null;
+    }
+
     await this.bookings.save(merged);
+    await this.hotelsService.invalidateCache();
+    const full = await this.findOne(id);
+    this.events.emitBookingUpdated(full);
+    this.events.emitAvailabilityChanged(full.hotelId);
+    return full;
+  }
+
+  /** Compute the refund/fee for cancelling a booking today. */
+  quoteFor(booking: Booking): CancellationQuote {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const daysUntilCheckIn = Math.round((Date.parse(booking.checkIn) - Date.parse(todayStr)) / MS_PER_DAY);
+    const freeCancellationUntil = new Date(
+      Date.parse(booking.checkIn) - CANCELLATION_POLICY.freeUntilDaysBefore * MS_PER_DAY,
+    ).toISOString().slice(0, 10);
+    const total = Number(booking.totalPrice);
+
+    if (booking.status === 'cancelled') {
+      return { cancellable: false, reason: 'This booking is already cancelled', daysUntilCheckIn, feePercent: 0, fee: 0, refund: 0, freeCancellationUntil };
+    }
+    if (daysUntilCheckIn < 1) {
+      return { cancellable: false, reason: 'Bookings cannot be cancelled on or after the check-in date', daysUntilCheckIn, feePercent: 0, fee: 0, refund: 0, freeCancellationUntil };
+    }
+    const feePercent = daysUntilCheckIn >= CANCELLATION_POLICY.freeUntilDaysBefore ? 0 : CANCELLATION_POLICY.lateFeePercent;
+    const fee = Math.round(total * feePercent) / 100;
+    return {
+      cancellable: true,
+      reason: null,
+      daysUntilCheckIn,
+      feePercent,
+      fee,
+      refund: Math.round((total - fee) * 100) / 100,
+      freeCancellationUntil,
+    };
+  }
+
+  async quote(id: string, user: JwtPayload): Promise<CancellationQuote> {
+    const booking = await this.findOne(id);
+    this.assertOwnership(booking, user);
+    return this.quoteFor(booking);
+  }
+
+  /** Cancel under the policy: refund what's due, keep the fee, free the room. */
+  async cancel(id: string, user: JwtPayload): Promise<Booking> {
+    const booking = await this.findOne(id);
+    this.assertOwnership(booking, user);
+    const q = this.quoteFor(booking);
+    if (!q.cancellable) throw new BadRequestException(q.reason);
+
+    const refund = await this.payments.refund(q.refund, booking.paymentRef);
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date();
+    booking.cancellationFee = q.fee;
+    booking.refundAmount = q.refund;
+    booking.refundRef = refund.ref;
+    await this.bookings.save(booking);
+
     await this.hotelsService.invalidateCache();
     const full = await this.findOne(id);
     this.events.emitBookingUpdated(full);
@@ -186,13 +268,16 @@ export class BookingsService {
     const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const header = [
       'Booking ID', 'Hotel', 'Room', 'Location', 'Guest', 'Email', 'Phone',
-      'Check-in', 'Check-out', 'Guests', 'Rooms', 'Total (CAD)', 'Status', 'Payment Ref', 'Created',
+      'Check-in', 'Check-out', 'Guests', 'Rooms', 'Total (CAD)', 'Status', 'Cancellation Fee', 'Refund', 'Payment Ref', 'Created',
     ].join(',');
     const lines = rows.map((b) =>
       [
         b.id, b.hotel?.name, b.room?.name, b.hotel ? `${b.hotel.place}, ${b.hotel.region}` : '',
         b.guestName, b.email, b.phone, b.checkIn, b.checkOut, b.guests, b.rooms,
-        Number(b.totalPrice).toFixed(2), b.status, b.paymentRef,
+        Number(b.totalPrice).toFixed(2), b.status,
+        b.cancellationFee != null ? Number(b.cancellationFee).toFixed(2) : '',
+        b.refundAmount != null ? Number(b.refundAmount).toFixed(2) : '',
+        b.paymentRef,
         b.createdAt.toISOString(),
       ].map(esc).join(','),
     );

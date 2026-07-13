@@ -5,6 +5,67 @@ import EditBookingModal from '../components/EditBookingModal';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
 import { formatDate, formatMoney } from '../utils/dates';
+import { CANCEL_POLICY } from '../utils/policy';
+
+function CancelStayModal({ booking, onClose }) {
+  const getCancellationQuote = useStore((s) => s.getCancellationQuote);
+  const cancelBooking = useStore((s) => s.cancelBooking);
+  const submitting = useStore((s) => s.submitting);
+  const [quote, setQuote] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    getCancellationQuote(booking.id)
+      .then((q) => { if (alive) { setQuote(q); setLoading(false); } })
+      .catch(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking.id]);
+
+  const confirm = async () => {
+    try {
+      await cancelBooking(booking.id);
+      onClose();
+    } catch { /* toast shown by store */ }
+  };
+
+  return (
+    <Modal title={`Cancel your stay at ${booking.hotel?.name}?`} onClose={onClose}>
+      {loading ? (
+        <div className="spinner" role="status" aria-label="Checking the cancellation policy" />
+      ) : !quote ? (
+        <p style={{ color: 'var(--danger)', fontWeight: 600 }}>Couldn't load the cancellation policy — try again.</p>
+      ) : !quote.cancellable ? (
+        <>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.93rem' }}>{quote.reason}</p>
+          <div className="modal-actions">
+            <button className="btn btn-primary" onClick={onClose}>Got it</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.9rem', marginBottom: 14 }}>
+            {quote.feePercent === 0
+              ? `You're outside the ${CANCEL_POLICY.freeUntilDaysBefore}-day window (check-in in ${quote.daysUntilCheckIn} days), so cancellation is free.`
+              : `Check-in is only ${quote.daysUntilCheckIn} day${quote.daysUntilCheckIn > 1 ? 's' : ''} away — within ${CANCEL_POLICY.freeUntilDaysBefore} days of check-in a ${quote.feePercent}% cancellation fee applies.`}
+          </p>
+          <div className="quote-box">
+            <div className="quote-row"><span>Booking total</span><span>{formatMoney(booking.totalPrice)}</span></div>
+            <div className="quote-row fee"><span>Cancellation fee ({quote.feePercent}%)</span><span>−{formatMoney(quote.fee)}</span></div>
+            <div className="quote-row refund"><span>Your refund</span><span>{formatMoney(quote.refund)}</span></div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-ghost" onClick={onClose}>Keep my booking</button>
+            <button className="btn btn-danger" onClick={confirm} disabled={submitting}>
+              {submitting ? 'Cancelling…' : `Cancel & refund ${formatMoney(quote.refund)}`}
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
+  );
+}
 
 export default function MyTripsPage() {
   const user = useStore((s) => s.user);
@@ -12,12 +73,12 @@ export default function MyTripsPage() {
   const myBookings = useStore((s) => s.myBookings);
   const loading = useStore((s) => s.loadingMy);
   const loadMyBookings = useStore((s) => s.loadMyBookings);
-  const updateBooking = useStore((s) => s.updateBooking);
   const deleteBooking = useStore((s) => s.deleteBooking);
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
 
   useEffect(() => {
     loadMyBookings();
@@ -84,11 +145,18 @@ export default function MyTripsPage() {
                   <span>🛏️ {b.room?.name || 'Room'}</span>
                   <span className="trip-total">{formatMoney(b.totalPrice)}</span>
                 </div>
+                {b.status === 'cancelled' && b.refundAmount != null && (
+                  <p className="refund-note">
+                    ↩ {formatMoney(b.refundAmount)} refunded
+                    {Number(b.cancellationFee) > 0 ? ` · ${formatMoney(b.cancellationFee)} cancellation fee` : ' · no fee'}
+                    {b.cancelledAt ? ` · ${formatDate(String(b.cancelledAt).slice(0, 10))}` : ''}
+                  </p>
+                )}
                 {b.specialRequests && <p className="trip-req">“{b.specialRequests}”</p>}
                 <div className="row-actions">
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditing(b)}>Edit</button>
                   {b.status !== 'cancelled' && (
-                    <button className="btn btn-ghost btn-sm" onClick={() => updateBooking(b.id, { status: 'cancelled' })}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setCancelling(b)}>
                       Cancel stay
                     </button>
                   )}
@@ -101,6 +169,8 @@ export default function MyTripsPage() {
       )}
 
       {editing && <EditBookingModal booking={editing} onClose={() => setEditing(null)} allowStatus={false} />}
+
+      {cancelling && <CancelStayModal booking={cancelling} onClose={() => setCancelling(null)} />}
 
       {deleting && (
         <Modal title="Delete this trip?" onClose={() => setDeleting(null)}>
