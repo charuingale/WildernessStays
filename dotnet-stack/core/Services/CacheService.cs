@@ -1,8 +1,9 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
-namespace WildernessStays.Api.Services;
+namespace WildernessStays.Core.Services;
 
 /// <summary>
 /// Redis-backed cache with a transparent in-memory fallback, so the API
@@ -14,15 +15,15 @@ public class CacheService
     private readonly ConnectionMultiplexer? _redis;
     private readonly ConcurrentDictionary<string, (string Value, DateTime ExpiresAt)> _memory = new();
 
-    public CacheService(IConfiguration config, ILogger<CacheService> logger)
+    public CacheService(WildernessOptions options, ILogger<CacheService> logger)
     {
         _logger = logger;
         try
         {
-            var options = ConfigurationOptions.Parse(config["Redis"] ?? "localhost:6379");
-            options.AbortOnConnectFail = false;
-            options.ConnectTimeout = 1500;
-            _redis = ConnectionMultiplexer.Connect(options);
+            var redisConfig = ConfigurationOptions.Parse(options.RedisConnection);
+            redisConfig.AbortOnConnectFail = false;
+            redisConfig.ConnectTimeout = 1500;
+            _redis = ConnectionMultiplexer.Connect(redisConfig);
             _logger.LogInformation("Redis configured — caching enabled (falls back to memory if unreachable)");
         }
         catch (Exception)

@@ -10,6 +10,24 @@ Self-contained implementation: **ASP.NET Core 8 + EF Core + PostgreSQL + Redis +
 | Cache | Redis 7 (Docker, optional) | 6380 |
 | Real-time | SignalR at /hubs/events | — |
 
+## Architecture (layered)
+
+```
+core/      WildernessStays.Core  — class library, packaged as a NuGet package
+           entities · EF Core DbContext · seeding · booking rules · availability
+           engine · auth · caching · payments · domain exceptions · event abstraction
+backend/   WildernessStays.Api   — thin ASP.NET Core host
+           controllers · SignalR hub · JWT wiring · exception→HTTP mapping
+```
+
+The API references the library as a **NuGet package** (`WildernessStays.Core 1.0.0`)
+served from the `local-packages/` folder feed (see `nuget.config`). After changing
+library code, repack and bump/clear the cache:
+
+```bash
+dotnet pack core -c Release -o local-packages
+```
+
 ## Run
 
 Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), Node 18+ (frontend only), Docker.
@@ -18,7 +36,8 @@ Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), N
 # 1. Databases
 docker compose up -d
 
-# 2. Backend (terminal 1)
+# 2. Build the core library package, then run the API (terminal 1)
+dotnet pack core -c Release -o local-packages
 cd backend
 dotnet run                 # restores packages, creates + seeds wilderness_stays_net,
                            # serves http://localhost:3001/api — Swagger at /swagger

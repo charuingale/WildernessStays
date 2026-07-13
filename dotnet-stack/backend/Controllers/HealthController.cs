@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using WildernessStays.Api.Data;
+using WildernessStays.Core.Data;
 
 namespace WildernessStays.Api.Controllers;
 

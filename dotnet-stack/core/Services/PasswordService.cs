@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace WildernessStays.Api.Services;
+namespace WildernessStays.Core.Services;
 
 /// <summary>PBKDF2-SHA256 password hashing via built-in crypto (no extra packages).</summary>
 public static class PasswordService

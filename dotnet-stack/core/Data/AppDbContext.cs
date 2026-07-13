@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using WildernessStays.Api.Models;
+using WildernessStays.Core.Models;
 
-namespace WildernessStays.Api.Data;
+namespace WildernessStays.Core.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

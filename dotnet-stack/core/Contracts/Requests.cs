@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace WildernessStays.Api.Dtos;
+namespace WildernessStays.Core.Contracts;
 
 public record RegisterDto(
     [Required, MaxLength(120)] string Name,

@@ -1,23 +1,29 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WildernessStays.Api.Data;
 using WildernessStays.Api.Hubs;
-using WildernessStays.Api.Services;
+using WildernessStays.Core;
+using WildernessStays.Core.Data;
+using WildernessStays.Core.Events;
+using WildernessStays.Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+// ---- Core library: data layer + business logic (from the WildernessStays.Core NuGet) ----
+var coreOptions = new WildernessOptions
+{
+    JwtSecret = builder.Configuration["Jwt:Secret"] ?? new WildernessOptions().JwtSecret,
+    RedisConnection = builder.Configuration["Redis"] ?? "localhost:6380",
+    StripeSecretKey = builder.Configuration["Stripe:SecretKey"],
+};
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IBookingEvents, SignalRBookingEvents>();
+builder.Services.AddWildernessStaysCore(builder.Configuration.GetConnectionString("Default")!, coreOptions);
 
+// ---- HTTP concerns ----
 builder.Services
     .AddControllers()
-    .AddJsonOptions(o =>
-    {
-        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.Never;
-    });
+    .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 // Nest-compatible validation error shape: { message: [ ... ] }
 builder.Services.Configure<ApiBehaviorOptions>(o =>
@@ -29,11 +35,6 @@ builder.Services.Configure<ApiBehaviorOptions>(o =>
             .ToArray(),
     }));
 
-builder.Services.AddSignalR();
-builder.Services.AddHttpClient();
-builder.Services.AddSingleton<CacheService>();
-builder.Services.AddSingleton<TokenService>();
-builder.Services.AddScoped<PaymentsService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -46,17 +47,32 @@ builder.Services
         {
             ValidateIssuer = false,
             ValidateAudience = false,
-            IssuerSigningKey = TokenService.Key(builder.Configuration),
+            IssuerSigningKey = TokenService.Key(coreOptions.JwtSecret),
             RoleClaimType = "role",
             NameClaimType = "name",
         };
     });
 builder.Services.AddAuthorization();
-builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials()));
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+    p.AllowAnyHeader().AllowAnyMethod().SetIsOriginAllowed(_ => true).AllowCredentials()));
 
 var app = builder.Build();
 
-// Minimal security headers (parity with the Node backend)
+// Map domain exceptions from the core library onto HTTP responses.
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (ApiException ex)
+    {
+        context.Response.StatusCode = ex.StatusCode;
+        await context.Response.WriteAsJsonAsync(new { message = ex.Message });
+    }
+});
+
+// Minimal security headers
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -82,6 +98,6 @@ using (var scope = app.Services.CreateScope())
     await Seeder.RunAsync(db, logger);
 }
 
-app.Logger.LogInformation("Wilderness Stays API (ASP.NET Core) running on {Urls} — Swagger at /swagger",
+app.Logger.LogInformation("Wilderness Stays API (ASP.NET Core, layered) on {Urls} — Swagger at /swagger",
     builder.Configuration["Urls"]);
 app.Run();

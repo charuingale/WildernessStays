@@ -1,9 +1,10 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using WildernessStays.Api.Models;
-using WildernessStays.Api.Services;
+using Microsoft.Extensions.Logging;
+using WildernessStays.Core.Models;
+using WildernessStays.Core.Services;
 
-namespace WildernessStays.Api.Data;
+namespace WildernessStays.Core.Data;
 
 public static class Seeder
 {
@@ -46,9 +47,12 @@ public static class Seeder
 
         if (await db.Hotels.AnyAsync()) return; // hotels already seeded
 
-        var path = Path.Combine(AppContext.BaseDirectory, "Data", "hotels.json");
-        if (!File.Exists(path)) path = Path.Combine(Directory.GetCurrentDirectory(), "Data", "hotels.json");
-        var json = await File.ReadAllTextAsync(path);
+        // hotels.json ships inside the library as an embedded resource.
+        using var stream = typeof(Seeder).Assembly
+            .GetManifestResourceStream("WildernessStays.Core.Data.hotels.json")
+            ?? throw new InvalidOperationException("Embedded seed data not found");
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
         var seeds = JsonSerializer.Deserialize<List<SeedHotel>>(json,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace WildernessStays.Api.Models;
+namespace WildernessStays.Core.Models;
 
 public class NearbyPlace
 {

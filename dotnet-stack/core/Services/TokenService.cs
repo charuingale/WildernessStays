@@ -2,14 +2,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using WildernessStays.Api.Models;
+using WildernessStays.Core.Models;
 
-namespace WildernessStays.Api.Services;
+namespace WildernessStays.Core.Services;
 
-public class TokenService(IConfiguration config)
+public class TokenService(WildernessOptions options)
 {
-    public static SymmetricSecurityKey Key(IConfiguration config) =>
-        new(Encoding.UTF8.GetBytes(config["Jwt:Secret"] ?? "wilderness-dotnet-dev-secret-change-me-0123456789"));
+    public static SymmetricSecurityKey Key(string secret) => new(Encoding.UTF8.GetBytes(secret));
 
     public string Sign(User user)
     {
@@ -22,7 +21,7 @@ public class TokenService(IConfiguration config)
                 new Claim("role", user.Role),
             },
             expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: new SigningCredentials(Key(config), SecurityAlgorithms.HmacSha256));
+            signingCredentials: new SigningCredentials(Key(options.JwtSecret), SecurityAlgorithms.HmacSha256));
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
