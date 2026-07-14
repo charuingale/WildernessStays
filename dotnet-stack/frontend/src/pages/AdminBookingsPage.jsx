@@ -162,30 +162,30 @@ export default function AdminBookingsPage() {
             <tbody>
               {bookings.map((b) => (
                 <tr key={b.id}>
-                  <td>
+                  <td data-label="Hotel">
                     <div className="b-hotel">{b.hotel?.name}</div>
                     <div className="b-sub">
                       {b.room?.name ? `${b.room.name} · ` : ''}
                       {b.hotel ? `${b.hotel.place}, ${b.hotel.region}` : ''}
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Guest">
                     <div className="b-hotel">{b.guestName}</div>
                     <div className="b-sub">{b.email}</div>
                   </td>
-                  <td>
+                  <td data-label="Stay">
                     <div>{formatDate(b.checkIn)} →</div>
                     <div>{formatDate(b.checkOut)}</div>
                   </td>
-                  <td>{b.guests}</td>
-                  <td>
+                  <td data-label="Guests">{b.guests}</td>
+                  <td data-label="Total">
                     <strong>{formatMoney(b.totalPrice)}</strong>
                     {b.status === 'cancelled' && b.refundAmount != null && (
                       <div className="b-sub">↩ {formatMoney(b.refundAmount)} refunded</div>
                     )}
                   </td>
-                  <td><span className={`status-badge ${b.status}`}>{b.status}</span></td>
-                  <td>
+                  <td data-label="Status"><span className={`status-badge ${b.status}`}>{b.status}</span></td>
+                  <td data-label="Actions">
                     <div className="row-actions">
                       <button className="btn btn-ghost btn-sm" onClick={() => setEditing(b)}>Edit</button>
                       <button className="btn btn-danger btn-sm" onClick={() => setDeleting(b)}>Delete</button>

@@ -60,6 +60,19 @@ GET  /api/bookings/:id/cancellation-quote   preview fee & refund before confirmi
 POST /api/bookings/:id/cancel               cancel under the policy
 ```
 
+## Test on a phone
+
+Start the frontend with `--host` so it's reachable on your Wi-Fi:
+
+```bash
+cd frontend
+npm run dev -- --host
+```
+
+Vite prints a Network URL (e.g. `http://192.168.1.23:5173`) — open it in your phone's
+browser (phone and PC on the same Wi-Fi; allow Node through the Windows Firewall prompt).
+API calls and live updates work through Vite's proxy, so only the one URL is needed.
+
 ## View the database
 
 ```bash

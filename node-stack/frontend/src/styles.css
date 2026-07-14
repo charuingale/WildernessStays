@@ -563,3 +563,52 @@ table.booking-table { width: 100%; border-collapse: collapse; min-width: 860px; 
   font-weight: 700; font-family: var(--serif); font-size: 1.05rem; color: var(--forest-deep);
 }
 .refund-note { font-size: 0.8rem; font-weight: 600; color: var(--success); }
+
+/* ============================================================
+   Mobile-friendly pass
+   ============================================================ */
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+@media (max-width: 700px) {
+  /* Admin bookings: table becomes stacked cards */
+  .booking-table thead { display: none; }
+  table.booking-table { min-width: 0; }
+  .booking-table, .booking-table tbody, .booking-table tr, .booking-table td { display: block; width: 100%; }
+  .booking-table tr { padding: 8px 0; border-bottom: 6px solid var(--parchment); }
+  .booking-table tr:last-child { border-bottom: none; }
+  .booking-table td {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    border-top: none; padding: 7px 16px; text-align: right;
+  }
+  .booking-table td::before {
+    content: attr(data-label);
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--slate); text-align: left; flex-shrink: 0;
+  }
+  .booking-table td > div, .booking-table td > strong { text-align: right; }
+  .booking-table .row-actions { justify-content: flex-end; }
+}
+
+@media (max-width: 560px) {
+  /* iOS Safari zooms into inputs below 16px — keep them at 16px on phones */
+  .field input, .field select, .field textarea { font-size: 16px; }
+
+  /* Comfortable touch targets (Apple HIG: 44pt) */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 38px; padding: 8px 14px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .bottomnav a { padding: 8px 20px; }
+
+  /* Tighter imagery and chrome */
+  .carousel-main { height: 250px; }
+  .carousel-thumb { width: 72px; height: 50px; }
+  .hero { min-height: 240px; }
+  .modal { padding: 20px 16px; border-radius: 14px; }
+  .booking-panel { padding: 18px 16px; }
+  .topbar { padding: 10px 14px; gap: 10px; }
+  .topbar .brand-name { font-size: 1.05rem; }
+  .user-chip .pill-text { display: none; }
+  .stat-cards { grid-template-columns: 1fr 1fr; }
+  .filterbar .btn { width: 100%; }
+  .row-actions { flex-wrap: wrap; }
+}
