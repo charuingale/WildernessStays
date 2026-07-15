@@ -1,0 +1,121 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const HERO_IMG =
+  'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=1800&q=80';
+
+/* Mountain drone footage, tried in order; the browser falls through to the
+   next <source> on failure, and to the still image if none load. */
+const HERO_VIDEOS = [
+  'https://videos.pexels.com/video-files/2099536/2099536-uhd_3840_2160_24fps.mp4',
+  'https://videos.pexels.com/video-files/4133023/4133023-uhd_3840_2160_30fps.mp4',
+  'https://videos.pexels.com/video-files/2871916/2871916-uhd_3840_2160_24fps.mp4',
+  'https://videos.pexels.com/video-files/857134/857134-hd_1280_720_25fps.mp4',
+];
+
+/** Autoplaying, muted drone footage with a slow push-in for a fly-through feel. */
+function HeroMedia() {
+  const [videoFailed, setVideoFailed] = React.useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
+  if (videoFailed) {
+    return <img className="hero-media kenburns" src={HERO_IMG} alt="Aerial view of a turquoise alpine lake beneath the Canadian Rockies" />;
+  }
+  return (
+    <video
+      className="hero-media hero-video"
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      poster={HERO_IMG}
+      aria-label="Drone flight over Canadian mountain wilderness"
+      onError={() => setVideoFailed(true)}
+    >
+      {HERO_VIDEOS.map((src) => (
+        <source key={src} src={src} type="video/mp4" />
+      ))}
+    </video>
+  );
+}
+
+/* Signature comforts included with every stay. */
+const PERKS = [
+  { icon: '🥞', title: 'Buffet breakfast', text: 'Chef-led alpine breakfast, included every morning.' },
+  { icon: '🅿️', title: 'Free parking', text: 'On-site parking and EV charging at every lodge, no fees.' },
+  { icon: '🔄', title: 'Flexible cancellation', text: 'Free until 7 days before check-in — plans change, we get it.' },
+  { icon: '🛬', title: 'Airport pickup & drop-off', text: 'Private transfers from the nearest airport, arranged by our concierge.' },
+];
+
+const STATS = [
+  { value: '8', label: 'Independent lodges' },
+  { value: '24', label: 'One-of-a-kind rooms' },
+  { value: '3', label: 'Provinces, coast to peaks' },
+  { value: '7 days', label: 'Free cancellation window' },
+];
+
+export default function HomePage() {
+  return (
+    <>
+      <section className="hero-cinema" aria-label="Wilderness Stays">
+        <HeroMedia />
+        <div className="hero-scrim" />
+        <div className="hero-inner">
+          <div className="hero-kicker"><span /> Wilderness Refined <span /></div>
+          <h1>
+            Where the mountains <em>keep</em> your reservation
+          </h1>
+          <p>
+            Hand-picked lodges across the Canadian Rockies and coastal rainforest —
+            timber warmth, stone hearths, and floor-to-ceiling wilderness.
+          </p>
+          <Link to="/search" className="btn btn-timber btn-hero">
+            Book Now
+          </Link>
+        </div>
+        <div className="hero-perks" aria-label="Included with every stay">
+          <span className="hero-perks-label">Included with every stay</span>
+          <div className="hero-perks-row">
+            {PERKS.map((perk) => (
+              <div key={perk.title} className="hero-perk">
+                <span className="p-icon">{perk.icon}</span>
+                <div>
+                  <h3>{perk.title}</h3>
+                  <p>{perk.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <main className="page">
+        <section className="home-intro">
+          <div className="sub">Who we are</div>
+          <h2>Eight lodges, rooted in the Canadian wild</h2>
+          <p>
+            Wilderness Stays is a curated collection of independent timber-and-stone lodges
+            across the Rockies, the Pacific coast and the Laurentians. Every room is a real,
+            one-of-a-kind space with its own view and character — once it's booked for your
+            dates, it's yours alone. Browse the collection, watch live availability on the
+            calendar, and reserve in minutes with instant confirmation.
+          </p>
+          <div className="home-stats">
+            {STATS.map((s) => (
+              <div key={s.label} className="home-stat">
+                <span className="s-num">{s.value}</span>
+                <span className="s-lab">{s.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="home-links">
+            <Link to="/search" className="btn btn-primary">Browse the lodges</Link>
+            <Link to="/about" className="btn btn-ghost">Our story</Link>
+          </div>
+        </section>
+      </main>
+    </>
+  );
+}

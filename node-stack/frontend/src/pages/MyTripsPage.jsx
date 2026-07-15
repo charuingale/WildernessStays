@@ -122,7 +122,7 @@ export default function MyTripsPage() {
         <div className="spinner" role="status" aria-label="Loading your trips" />
       ) : myBookings.length === 0 ? (
         <EmptyState icon="🎒" title="No trips yet">
-          Find your next escape on the <Link to="/" style={{ color: 'var(--timber)', fontWeight: 600 }}>Explore page</Link>.
+          Find your next escape on the <Link to="/search" style={{ color: 'var(--timber)', fontWeight: 600 }}>Search page</Link>.
         </EmptyState>
       ) : (
         <div className="trip-list">

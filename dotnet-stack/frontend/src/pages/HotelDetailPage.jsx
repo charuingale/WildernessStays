@@ -61,7 +61,7 @@ export default function HotelDetailPage() {
         <div className="empty-state">
           <div className="e-ico">🧭</div>
           <h3>Lodge not found</h3>
-          <p><Link to="/" style={{ color: 'var(--timber)', fontWeight: 600 }}>Back to Explore</Link></p>
+          <p><Link to="/search" style={{ color: 'var(--timber)', fontWeight: 600 }}>Back to search</Link></p>
         </div>
       </main>
     );
@@ -70,7 +70,7 @@ export default function HotelDetailPage() {
   return (
     <main className="page">
       <div className="breadcrumb">
-        <Link to="/">Explore</Link> <span>›</span> <span>{hotel.name}</span>
+        <Link to="/search">Search</Link> <span>›</span> <span>{hotel.name}</span>
       </div>
 
       <div className="detail-title section">

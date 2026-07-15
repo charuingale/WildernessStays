@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
+import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import HotelDetailPage from './pages/HotelDetailPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
@@ -68,7 +69,8 @@ export default function App() {
           <p>Wilderness Refined</p>
         </div>
         <nav>
-          <NavLink to="/" end><span>🏔️</span> Explore Lodges</NavLink>
+          <NavLink to="/" end><span>🏔️</span> Home</NavLink>
+          <NavLink to="/search"><span>🔍</span> Find a Lodge</NavLink>
           <NavLink to="/trips"><span>🎒</span> My Trips</NavLink>
           <NavLink to="/admin"><span>🗂️</span> Reservations Desk</NavLink>
           <NavLink to="/concierge"><span>🛎️</span> Concierge</NavLink>
@@ -84,7 +86,8 @@ export default function App() {
       </aside>
 
       <Routes>
-        <Route path="/" element={<ExplorePage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/search" element={<ExplorePage />} />
         <Route path="/hotel/:id" element={<HotelDetailPage />} />
         <Route path="/trips" element={<MyTripsPage />} />
         <Route path="/admin" element={<AdminBookingsPage />} />
@@ -99,7 +102,10 @@ export default function App() {
 
       <nav className="bottomnav">
         <NavLink to="/" end>
-          <span className="nav-ico">🏔️</span> Explore
+          <span className="nav-ico">🏔️</span> Home
+        </NavLink>
+        <NavLink to="/search">
+          <span className="nav-ico">🔍</span> Search
         </NavLink>
         <NavLink to="/trips">
           <span className="nav-ico">🎒</span> My Trips
