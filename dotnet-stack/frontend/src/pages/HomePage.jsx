@@ -7,10 +7,12 @@ const HERO_IMG =
 /* Mountain drone footage, tried in order; the browser falls through to the
    next <source> on failure, and to the still image if none load. */
 const HERO_VIDEOS = [
-  'https://videos.pexels.com/video-files/2099536/2099536-uhd_3840_2160_24fps.mp4',
-  'https://videos.pexels.com/video-files/4133023/4133023-uhd_3840_2160_30fps.mp4',
-  'https://videos.pexels.com/video-files/2871916/2871916-uhd_3840_2160_24fps.mp4',
-  'https://videos.pexels.com/video-files/857134/857134-hd_1280_720_25fps.mp4',
+  // Snowy mountain-range drone aerial (Pexels #28638515, 1440p) — verified file URL
+  'https://videos.pexels.com/video-files/28638515/12438509_2560_1440_24fps.mp4',
+  // Lush alpine mountain range drone aerial (Pexels #32890912, 1440p) — verified file URL
+  'https://videos.pexels.com/video-files/32890912/14017397_2560_1440_30fps.mp4',
+  // Québec forests & river aerial via Pexels' stable download redirect
+  'https://www.pexels.com/download/video/32481885/',
 ];
 
 /** Autoplaying, muted drone footage with a slow push-in for a fly-through feel. */
