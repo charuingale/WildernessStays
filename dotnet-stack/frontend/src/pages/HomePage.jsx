@@ -59,9 +59,9 @@ const HIKE_ACCENT = IMG('photo-1476900543704-4312b78632f8', 700);
 
 /* Signature amenities across the collection. */
 const AMENITIES = [
-  { img: IMG('photo-1540541338287-41700207dee6'), icon: '♨️', title: 'Pool & hot tubs', text: 'Heated pools and cedar hot tubs under the peaks.' },
+  { img: IMG('photo-1561501900-3701fa6a0864'), icon: '♨️', title: 'Pool & hot tubs', text: 'Heated pools and cedar hot tubs under the peaks.' },
   { img: IMG('photo-1504754524776-8f4f37790ca0'), icon: '🥞', title: 'Buffet breakfast', text: 'Chef-led alpine spread, included every morning.' },
-  { img: IMG('photo-1450778869180-41d0601e046e'), icon: '🐾', title: 'Pet-friendly rooms', text: 'Trail dogs welcome — beds, bowls and treats provided.' },
+  { img: IMG('photo-1541364983171-a8ba01e95cfc'), icon: '🐾', title: 'Pet-friendly rooms', text: 'Trail dogs welcome — beds, bowls and treats provided.' },
   { img: IMG('photo-1497032628192-86f99bcd76bc'), icon: '📶', title: 'High-speed Wi-Fi', text: 'Fibre-fast and free, even this far into the wild.' },
   { img: IMG('photo-1533473359331-0135ef1b58bf'), icon: '🅿️', title: 'Free parking', text: 'On-site parking with EV charging at every lodge.' },
   { img: IMG('photo-1534438327276-14e5300c3a48'), icon: '🏋️', title: 'Fitness rooms', text: 'Train with a view before the trail does it for you.' },

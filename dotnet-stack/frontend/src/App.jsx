@@ -29,6 +29,8 @@ export default function App() {
   const offline = useStore((s) => s.offline);
   const user = useStore((s) => s.user);
   const logout = useStore((s) => s.logout);
+  // Reservations Desk is staff-only: admins when live, anyone in offline demo mode.
+  const showDesk = user?.role === 'admin' || offline;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -44,6 +46,14 @@ export default function App() {
           <span className="brand-name">Wilderness Stays</span>
           <span className="brand-sub">Canadian Rustic Luxury</span>
         </NavLink>
+        <nav className="topnav" aria-label="Primary">
+          <NavLink to="/" end>Home</NavLink>
+          <NavLink to="/search">Find a Lodge</NavLink>
+          <NavLink to="/trips">My Trips</NavLink>
+          {showDesk && <NavLink to="/admin">Desk</NavLink>}
+          <NavLink to="/about">About</NavLink>
+          <NavLink to="/contact">Contact</NavLink>
+        </nav>
         <div className="spacer" />
         <div className="status-pill" title={offline ? 'Backend unreachable — data saved to your browser' : 'Connected to live API'}>
           <span className={`status-dot ${offline ? 'offline' : 'live'}`} />
@@ -73,7 +83,7 @@ export default function App() {
           <NavLink to="/" end><span>🏔️</span> Home</NavLink>
           <NavLink to="/search"><span>🔍</span> Find a Lodge</NavLink>
           <NavLink to="/trips"><span>🎒</span> My Trips</NavLink>
-          <NavLink to="/admin"><span>🗂️</span> Reservations Desk</NavLink>
+          {showDesk && <NavLink to="/admin"><span>🗂️</span> Reservations Desk</NavLink>}
           <NavLink to="/concierge"><span>🛎️</span> Concierge</NavLink>
           <NavLink to="/portfolio"><span>🌲</span> Portfolio</NavLink>
           <NavLink to="/sustainability"><span>🍁</span> Sustainability</NavLink>
@@ -113,9 +123,11 @@ export default function App() {
         <NavLink to="/trips">
           <span className="nav-ico">🎒</span> My Trips
         </NavLink>
-        <NavLink to="/admin">
-          <span className="nav-ico">🗂️</span> Desk
-        </NavLink>
+        {showDesk && (
+          <NavLink to="/admin">
+            <span className="nav-ico">🗂️</span> Desk
+          </NavLink>
+        )}
       </nav>
 
       <ToastStack />

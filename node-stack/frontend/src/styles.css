@@ -900,3 +900,18 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
   .footer-grid { grid-template-columns: 1fr; }
   .site-footer { padding-bottom: 110px; }
 }
+
+/* ---------- Horizontal top navigation (desktop) ---------- */
+.topnav { display: flex; align-items: center; gap: 2px; margin-left: 18px; }
+.topnav a {
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.3px;
+  color: rgba(246, 241, 231, 0.75);
+  padding: 7px 13px; border-radius: 999px;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.topnav a:hover { color: var(--parchment); background: rgba(246,241,231,0.1); }
+.topnav a.active { color: var(--parchment); background: rgba(246,241,231,0.14); }
+@media (max-width: 940px) {
+  .topnav { display: none; }
+}
