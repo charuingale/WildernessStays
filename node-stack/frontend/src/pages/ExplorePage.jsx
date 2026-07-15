@@ -51,24 +51,6 @@ const PERKS = [
   { icon: '🛬', title: 'Airport pickup & drop-off', text: 'Private transfers from the nearest airport, arranged by our concierge.' },
 ];
 
-function PerksStrip() {
-  return (
-    <section className="perks-strip" aria-label="Included with every stay">
-      <h2 className="perks-title">Included with every stay</h2>
-      <div className="perks-grid">
-        {PERKS.map((p) => (
-          <div key={p.title} className="perk-card">
-            <span className="perk-icon">{p.icon}</span>
-            <div>
-              <h3>{p.title}</h3>
-              <p>{p.text}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 export default function ExplorePage() {
   const hotels = useStore((s) => s.hotels);
@@ -82,21 +64,37 @@ export default function ExplorePage() {
   }, []);
 
   return (
-    <main className="page">
-      <section className="hero hero-cinematic">
+    <>
+      <section className="hero-cinema" aria-label="Wilderness Stays">
         <HeroMedia />
-        <div className="hero-content">
-          <div className="kicker">Wilderness Refined</div>
-          <h1>Where the mountains keep your reservation</h1>
+        <div className="hero-scrim" />
+        <div className="hero-inner">
+          <div className="hero-kicker"><span /> Wilderness Refined <span /></div>
+          <h1>
+            Where the mountains <em>keep</em> your reservation
+          </h1>
           <p>
             Hand-picked lodges across the Canadian Rockies and coastal rainforest —
             timber warmth, stone hearths, and floor-to-ceiling wilderness.
           </p>
         </div>
+        <div className="hero-perks" aria-label="Included with every stay">
+          <span className="hero-perks-label">Included with every stay</span>
+          <div className="hero-perks-row">
+            {PERKS.map((perk) => (
+              <div key={perk.title} className="hero-perk">
+                <span className="p-icon">{perk.icon}</span>
+                <div>
+                  <h3>{perk.title}</h3>
+                  <p>{perk.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      <PerksStrip />
-
+      <main className="page">
       {offline && (
         <div className="offline-banner">
           <span>🍂</span>
@@ -120,6 +118,7 @@ export default function ExplorePage() {
           ))}
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

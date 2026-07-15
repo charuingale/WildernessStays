@@ -651,3 +651,110 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
 .perk-card p { font-size: 0.76rem; color: var(--ink-soft); line-height: 1.45; margin-top: 2px; }
 @media (max-width: 900px) { .perks-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 480px) { .perks-grid { grid-template-columns: 1fr } }
+
+/* ============================================================
+   Cinematic full-bleed hero — refined pass
+   ============================================================ */
+.hero-cinema {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  height: clamp(600px, 82vh, 900px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--forest-deep);
+}
+.hero-scrim {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(180deg,
+      rgba(31, 46, 35, 0.42) 0%,
+      rgba(31, 46, 35, 0.05) 30%,
+      rgba(31, 46, 35, 0.28) 58%,
+      rgba(31, 46, 35, 0.82) 88%,
+      rgba(31, 46, 35, 0.94) 100%);
+}
+.hero-inner {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: 0 26px; color: var(--parchment);
+  text-align: center;
+  margin-bottom: 42px;
+}
+.hero-kicker {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  font-size: 0.72rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--timber-light); font-weight: 700; margin-bottom: 18px;
+}
+.hero-kicker span { display: inline-block; width: 46px; height: 1px; background: rgba(201, 151, 101, 0.55); }
+.hero-inner h1 {
+  color: var(--parchment);
+  font-size: clamp(2.4rem, 5.6vw, 4.4rem);
+  font-weight: 500; line-height: 1.08; letter-spacing: 0.5px;
+  text-shadow: 0 2px 24px rgba(31, 46, 35, 0.55);
+  max-width: 860px; margin: 0 auto;
+}
+.hero-inner h1 em { font-style: italic; color: var(--timber-light); }
+.hero-inner p {
+  max-width: 560px; margin: 16px auto 0;
+  color: rgba(246, 241, 231, 0.85); font-size: 1.02rem; font-weight: 300;
+  text-shadow: 0 1px 12px rgba(31, 46, 35, 0.6);
+}
+
+/* Perks docked on the footage — frosted glass */
+.hero-perks {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: 0 26px 34px;
+}
+.hero-perks-label {
+  display: block; text-align: center;
+  font-size: 0.64rem; letter-spacing: 3.2px; text-transform: uppercase;
+  color: rgba(246, 241, 231, 0.66); font-weight: 700; margin-bottom: 12px;
+}
+.hero-perks-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.hero-perk {
+  display: flex; gap: 13px; align-items: center;
+  background: rgba(31, 46, 35, 0.38);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(246, 241, 231, 0.2);
+  border-radius: 16px; padding: 14px 17px;
+  transition: background 0.22s, transform 0.22s, border-color 0.22s;
+}
+.hero-perk:hover {
+  background: rgba(31, 46, 35, 0.55);
+  border-color: rgba(201, 151, 101, 0.55);
+  transform: translateY(-4px);
+}
+.hero-perk .p-icon {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  background: rgba(169, 116, 63, 0.3);
+  border: 1px solid rgba(201, 151, 101, 0.5);
+}
+.hero-perk h3 { font-family: var(--sans); font-size: 0.85rem; font-weight: 700; color: var(--parchment); letter-spacing: 0.2px; }
+.hero-perk p { font-size: 0.72rem; color: rgba(246, 241, 231, 0.72); line-height: 1.4; margin-top: 2px; }
+
+/* retire the old below-hero strip if present */
+.perks-strip { display: none; }
+
+@media (max-width: 900px) {
+  .hero-perks-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .hero-cinema { height: clamp(560px, 92vh, 760px); }
+  .hero-inner { margin-bottom: 26px; }
+  /* swipeable perk cards on phones */
+  .hero-perks { padding-bottom: 24px; }
+  .hero-perks-row {
+    display: flex; overflow-x: auto; gap: 12px;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px; margin: 0 -26px; padding-left: 26px; padding-right: 26px;
+  }
+  .hero-perks-row::-webkit-scrollbar { display: none; }
+  .hero-perk { min-width: min(310px, 82vw); scroll-snap-align: start; }
+}
