@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>WildernessStays.Core</RootNamespace>
     <PackageId>WildernessStays.Core</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Charu Ingale</Authors>
     <Description>Data layer and business logic for the Wilderness Stays hotel reservation platform: entities, EF Core context, seeding, booking rules, availability engine, cancellation policy, auth, caching and payments.</Description>
   </PropertyGroup>

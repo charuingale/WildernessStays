@@ -52,7 +52,9 @@ public class BookingsController(BookingService bookings) : ControllerBase
     public async Task<IActionResult> Update(Guid id, UpdateBookingDto dto) =>
         Ok(await bookings.UpdateAsync(id, dto, CurrentUserId, IsAdmin));
 
+    /// <summary>Deleting booking records is admin-only; guests cancel instead.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Remove(Guid id)
     {
         await bookings.DeleteAsync(id, CurrentUserId, IsAdmin);

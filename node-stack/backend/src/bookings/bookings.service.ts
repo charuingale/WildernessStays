@@ -151,6 +151,12 @@ export class BookingsService {
     if (dto.status === 'cancelled' && booking.status !== 'cancelled') {
       return this.cancel(id, user);
     }
+
+    // Completed stays are immutable history for guests (admins may still correct records).
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (user.role !== 'admin' && booking.checkOut < todayStr) {
+      throw new BadRequestException('This stay is in the past and can no longer be changed');
+    }
     const merged = { ...booking, ...dto };
     const nights = this.nights(merged.checkIn, merged.checkOut);
 

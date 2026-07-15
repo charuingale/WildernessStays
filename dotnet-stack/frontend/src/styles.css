@@ -915,3 +915,6 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
 @media (max-width: 940px) {
   .topnav { display: none; }
 }
+
+/* ---------- Booking history note ---------- */
+.history-note { font-size: 0.8rem; font-weight: 600; color: var(--slate); }

@@ -171,6 +171,10 @@ public class BookingService(
         if (dto.Status == "cancelled" && booking.Status != "cancelled")
             return await CancelAsync(id, userId, isAdmin);
 
+        // Completed stays are immutable history for guests (admins may still correct records).
+        if (!isAdmin && booking.CheckOut < DateOnly.FromDateTime(DateTime.UtcNow))
+            throw new DomainValidationException("This stay is in the past and can no longer be changed");
+
         var checkIn = dto.CheckIn ?? booking.CheckIn;
         var checkOut = dto.CheckOut ?? booking.CheckOut;
         var status = dto.Status ?? booking.Status;

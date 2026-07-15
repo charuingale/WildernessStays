@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
     <!-- Business logic + data layer, consumed as a NuGet package from the local feed -->
-    <PackageReference Include="WildernessStays.Core" Version="1.1.0" />
+    <PackageReference Include="WildernessStays.Core" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

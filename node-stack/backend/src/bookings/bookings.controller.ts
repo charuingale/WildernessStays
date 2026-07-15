@@ -67,7 +67,9 @@ export class BookingsController {
     return this.bookingsService.update(id, dto, user);
   }
 
+  /** Deleting booking records is an admin-only operation; guests cancel instead. */
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @HttpCode(200)
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     return this.bookingsService.remove(id, user);

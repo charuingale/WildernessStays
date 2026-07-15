@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import EditBookingModal from '../components/EditBookingModal';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
-import { formatDate, formatMoney } from '../utils/dates';
+import { formatDate, formatMoney, todayISO } from '../utils/dates';
 import { CANCEL_POLICY } from '../utils/policy';
 
 function CancelStayModal({ booking, onClose }) {
@@ -12,13 +12,14 @@ function CancelStayModal({ booking, onClose }) {
   const cancelBooking = useStore((s) => s.cancelBooking);
   const submitting = useStore((s) => s.submitting);
   const [quote, setQuote] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     getCancellationQuote(booking.id)
       .then((q) => { if (alive) { setQuote(q); setLoading(false); } })
-      .catch(() => { if (alive) setLoading(false); });
+      .catch((e) => { if (alive) { setLoadError(e.message || 'Unknown error'); setLoading(false); } });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking.id]);
@@ -35,7 +36,14 @@ function CancelStayModal({ booking, onClose }) {
       {loading ? (
         <div className="spinner" role="status" aria-label="Checking the cancellation policy" />
       ) : !quote ? (
-        <p style={{ color: 'var(--danger)', fontWeight: 600 }}>Couldn't load the cancellation policy — try again.</p>
+        <>
+          <p style={{ color: 'var(--danger)', fontWeight: 600 }}>
+            Couldn't load the cancellation policy{loadError ? ` — ${loadError}` : ''}.
+          </p>
+          <p style={{ color: 'var(--ink-soft)', fontSize: '0.83rem', marginTop: 8 }}>
+            If this keeps happening, make sure the backend has been restarted since the last update.
+          </p>
+        </>
       ) : !quote.cancellable ? (
         <>
           <p style={{ color: 'var(--ink-soft)', fontSize: '0.93rem' }}>{quote.reason}</p>
@@ -73,12 +81,12 @@ export default function MyTripsPage() {
   const myBookings = useStore((s) => s.myBookings);
   const loading = useStore((s) => s.loadingMy);
   const loadMyBookings = useStore((s) => s.loadMyBookings);
-  const deleteBooking = useStore((s) => s.deleteBooking);
+
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
   const [cancelling, setCancelling] = useState(null);
+  const today = todayISO();
 
   useEffect(() => {
     loadMyBookings();
@@ -153,15 +161,16 @@ export default function MyTripsPage() {
                   </p>
                 )}
                 {b.specialRequests && <p className="trip-req">“{b.specialRequests}”</p>}
-                <div className="row-actions">
-                  <button className="btn btn-ghost btn-sm" onClick={() => setEditing(b)}>Edit</button>
-                  {b.status !== 'cancelled' && (
-                    <button className="btn btn-ghost btn-sm" onClick={() => setCancelling(b)}>
-                      Cancel stay
-                    </button>
-                  )}
-                  <button className="btn btn-danger btn-sm" onClick={() => setDeleting(b)}>Delete</button>
-                </div>
+                {b.checkOut < today ? (
+                  <p className="history-note">🧾 Completed stay — kept in your booking history</p>
+                ) : b.status === 'cancelled' ? (
+                  <p className="history-note">Cancelled — kept in your booking history</p>
+                ) : (
+                  <div className="row-actions">
+                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(b)}>Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setCancelling(b)}>Cancel stay</button>
+                  </div>
+                )}
               </div>
             </article>
           ))}
@@ -172,20 +181,6 @@ export default function MyTripsPage() {
 
       {cancelling && <CancelStayModal booking={cancelling} onClose={() => setCancelling(null)} />}
 
-      {deleting && (
-        <Modal title="Delete this trip?" onClose={() => setDeleting(null)}>
-          <p style={{ color: 'var(--ink-soft)', fontSize: '0.93rem' }}>
-            Your stay at <strong>{deleting.hotel?.name}</strong> ({formatDate(deleting.checkIn)} –{' '}
-            {formatDate(deleting.checkOut)}) will be permanently removed.
-          </p>
-          <div className="modal-actions">
-            <button className="btn btn-ghost" onClick={() => setDeleting(null)}>Keep it</button>
-            <button className="btn btn-danger" onClick={async () => { await deleteBooking(deleting.id); setDeleting(null); }}>
-              Delete trip
-            </button>
-          </div>
-        </Modal>
-      )}
     </main>
   );
 }
