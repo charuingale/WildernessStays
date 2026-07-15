@@ -789,3 +789,114 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
 @media (max-width: 560px) {
   .home-stats { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- About split (who we are + hiking collage) ---------- */
+.about-split {
+  display: grid; grid-template-columns: 1.05fr 1fr; gap: 44px;
+  align-items: center; margin: 30px 0 44px;
+}
+.about-text .sub { color: var(--timber); font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; font-size: 0.72rem; }
+.about-text h2 { font-size: clamp(1.7rem, 3.4vw, 2.5rem); margin: 8px 0 14px; }
+.about-text > p { color: var(--ink-soft); font-size: 0.97rem; line-height: 1.75; }
+.about-text .home-stats { grid-template-columns: 1fr 1fr; text-align: left; }
+.about-text .home-links { justify-content: flex-start; }
+.about-collage { position: relative; min-height: 460px; }
+.collage-main {
+  width: 86%; height: 400px; object-fit: cover;
+  border-radius: 20px; box-shadow: var(--shadow-lg);
+}
+.collage-accent {
+  position: absolute; right: 0; bottom: 0;
+  width: 46%; height: 230px; object-fit: cover;
+  border-radius: 16px; border: 6px solid var(--parchment);
+  box-shadow: var(--shadow-lg);
+}
+.collage-badge {
+  position: absolute; top: 18px; left: 18px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  background: rgba(31,46,35,0.82); color: var(--parchment);
+  padding: 7px 14px; border-radius: 999px; backdrop-filter: blur(4px);
+}
+
+/* ---------- Amenity showcase ---------- */
+.amenity-showcase { margin-bottom: 26px; }
+.showcase-head { text-align: center; margin-bottom: 22px; }
+.showcase-head .sub { color: var(--timber); font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; font-size: 0.72rem; }
+.showcase-head h2 { font-size: clamp(1.6rem, 3.2vw, 2.3rem); margin-top: 6px; }
+.showcase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.showcase-card {
+  position: relative; margin: 0; border-radius: 18px; overflow: hidden;
+  height: 240px; box-shadow: var(--shadow-sm); background: var(--slate);
+  transition: transform 0.22s, box-shadow 0.22s;
+}
+.showcase-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.showcase-card img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s;
+}
+.showcase-card:hover img { transform: scale(1.06); }
+.showcase-card figcaption {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; gap: 11px; align-items: center;
+  padding: 30px 16px 14px;
+  background: linear-gradient(180deg, rgba(31,46,35,0) 0%, rgba(31,46,35,0.88) 55%);
+  color: var(--parchment);
+}
+.showcase-card .sc-icon {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  background: rgba(169,116,63,0.35); border: 1px solid rgba(201,151,101,0.5);
+}
+.showcase-card h3 { font-family: var(--sans); font-size: 0.9rem; font-weight: 700; color: var(--parchment); }
+.showcase-card p { font-size: 0.72rem; color: rgba(246,241,231,0.78); line-height: 1.35; margin-top: 1px; }
+
+/* ---------- Site footer ---------- */
+.site-footer {
+  background: var(--forest-deep); color: rgba(246,241,231,0.82);
+  margin-top: 30px; padding: 46px 22px 96px;
+}
+.footer-grid {
+  max-width: 1180px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap: 40px;
+}
+.site-footer h3 { font-size: 1.4rem; color: var(--parchment); }
+.site-footer h4 { font-family: var(--sans); font-size: 0.74rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--timber-light); margin-bottom: 10px; }
+.footer-tag { font-size: 0.85rem; color: rgba(246,241,231,0.66); margin: 6px 0 14px; }
+.site-footer address { font-style: normal; font-size: 0.86rem; line-height: 1.65; }
+.footer-contact { margin-top: 10px; font-size: 0.86rem; line-height: 1.7; }
+.footer-contact a { color: var(--timber-light); }
+.footer-contact a:hover { text-decoration: underline; }
+.footer-links { display: flex; flex-direction: column; gap: 8px; }
+.footer-links a { font-size: 0.9rem; color: rgba(246,241,231,0.82); transition: color 0.15s; width: fit-content; }
+.footer-links a:hover { color: var(--timber-light); }
+.footer-signup {
+  background: rgba(246,241,231,0.07);
+  border: 1px solid rgba(246,241,231,0.16);
+  border-radius: 16px; padding: 22px;
+}
+.footer-signup form { display: flex; flex-direction: column; gap: 10px; }
+.footer-signup .field input {
+  background: rgba(246,241,231,0.94); border-color: transparent;
+}
+.footer-fineprint { margin-top: 12px; font-size: 0.78rem; color: rgba(246,241,231,0.6); }
+.footer-fineprint a { color: var(--timber-light); text-decoration: underline; }
+.footer-base {
+  max-width: 1180px; margin: 36px auto 0; padding-top: 18px;
+  border-top: 1px solid rgba(246,241,231,0.14);
+  font-size: 0.78rem; color: rgba(246,241,231,0.55); text-align: center;
+}
+
+@media (max-width: 960px) {
+  .about-split { grid-template-columns: 1fr; gap: 26px; }
+  .about-collage { min-height: 0; height: 340px; }
+  .collage-main { height: 300px; }
+  .collage-accent { height: 180px; }
+  .showcase-grid { grid-template-columns: 1fr 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-signup { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .showcase-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+  .site-footer { padding-bottom: 110px; }
+}

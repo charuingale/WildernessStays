@@ -8,6 +8,7 @@ import AdminBookingsPage from './pages/AdminBookingsPage';
 import MyTripsPage from './pages/MyTripsPage';
 import AuthPage from './pages/AuthPage';
 import { ConciergePage, PortfolioPage, SustainabilityPage, AboutPage, ContactPage, NotFoundPage } from './pages/StaticPages';
+import SiteFooter from './components/SiteFooter';
 
 function ToastStack() {
   const toasts = useStore((s) => s.toasts);
@@ -99,6 +100,8 @@ export default function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
+      <SiteFooter />
 
       <nav className="bottomnav">
         <NavLink to="/" end>
