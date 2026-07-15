@@ -612,3 +612,42 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
   .filterbar .btn { width: 100%; }
   .row-actions { flex-wrap: wrap; }
 }
+
+/* ---------- Cinematic hero (drone video) ---------- */
+.hero-cinematic { min-height: 400px; }
+.hero-media {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.hero-video { transform: scale(1.02); animation: hero-push 28s ease-in-out infinite alternate; }
+.kenburns { animation: hero-push 32s ease-in-out infinite alternate; }
+@keyframes hero-push {
+  from { transform: scale(1.02) translateY(0); }
+  to { transform: scale(1.12) translateY(-2.5%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-video, .kenburns { animation: none; transform: none; }
+}
+@media (max-width: 560px) {
+  .hero-cinematic { min-height: 300px; }
+}
+
+/* ---------- Perks strip ---------- */
+.perks-strip { margin: -6px 0 26px; }
+.perks-title {
+  font-size: 0.72rem; letter-spacing: 2.6px; text-transform: uppercase;
+  color: var(--timber); font-family: var(--sans); font-weight: 700;
+  margin-bottom: 12px; text-align: center;
+}
+.perks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.perk-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--parchment-card); border: 1px solid var(--timber-pale);
+  border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow-sm);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.perk-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.perk-icon { font-size: 1.5rem; line-height: 1.2; }
+.perk-card h3 { font-family: var(--sans); font-size: 0.88rem; font-weight: 700; color: var(--forest-deep); }
+.perk-card p { font-size: 0.76rem; color: var(--ink-soft); line-height: 1.45; margin-top: 2px; }
+@media (max-width: 900px) { .perks-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .perks-grid { grid-template-columns: 1fr } }
