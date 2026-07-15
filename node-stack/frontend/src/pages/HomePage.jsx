@@ -2,17 +2,17 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const HERO_IMG =
-  'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=1800&q=80';
+  'https://images.pexels.com/videos/20600550/4k-alberta-banff-blue-20600550.jpeg?auto=compress&w=1800';
 
 /* Mountain drone footage, tried in order; the browser falls through to the
    next <source> on failure, and to the still image if none load. */
 const HERO_VIDEOS = [
-  // Snowy mountain-range drone aerial (Pexels #28638515, 1440p) — verified file URL
-  'https://videos.pexels.com/video-files/28638515/12438509_2560_1440_24fps.mp4',
-  // Lush alpine mountain range drone aerial (Pexels #32890912, 1440p) — verified file URL
-  'https://videos.pexels.com/video-files/32890912/14017397_2560_1440_30fps.mp4',
-  // Québec forests & river aerial via Pexels' stable download redirect
-  'https://www.pexels.com/download/video/32481885/',
+  // Moraine Lake, Banff — mountains reflected at dawn (Pexels #20600550, 1440p) — verified file URL
+  'https://videos.pexels.com/video-files/20600550/20600550-uhd_2560_1440_30fps.mp4',
+  // Moraine Lake at dusk (Pexels #35080559) via stable download redirect
+  'https://www.pexels.com/download/video/35080559/',
+  // Canadian Rockies — Moraine Lake (Pexels #19618462) via stable download redirect
+  'https://www.pexels.com/download/video/19618462/',
 ];
 
 /** Autoplaying, muted drone footage with a slow push-in for a fly-through feel. */
