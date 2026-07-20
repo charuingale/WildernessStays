@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Hotel } from './hotel.entity';
@@ -44,11 +44,19 @@ export class HotelsService {
     return Math.max(0, total - blocked.size);
   }
 
+  /** Invalid stay ranges would report every room available and poison the cache. */
+  private static assertValidRange(checkIn: string, checkOut: string) {
+    if (checkOut <= checkIn) {
+      throw new BadRequestException('checkOut must be after checkIn');
+    }
+  }
+
   async findAll(query: QueryHotelsDto): Promise<HotelWithAvailability[]> {
     const today = new Date().toISOString().slice(0, 10);
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     const checkIn = query.checkIn || today;
     const checkOut = query.checkOut || tomorrow;
+    HotelsService.assertValidRange(checkIn, checkOut);
 
     const cacheKey = `hotels:${JSON.stringify({ ...query, checkIn, checkOut })}`;
     const cached = await this.cache.get<HotelWithAvailability[]>(cacheKey);
@@ -65,9 +73,36 @@ export class HotelsService {
     qb.orderBy('h.rating', 'DESC');
 
     const list = await qb.getMany();
+
+    // Batched availability: one query for room counts, one for blocked rooms
+    // (previously one blocked-rooms query per hotel — N+1).
+    const roomCountRows = await this.rooms
+      .createQueryBuilder('r')
+      .select('r.hotelId', 'hotelId')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('r.hotelId')
+      .getRawMany<{ hotelId: string; count: string }>();
+    const roomCounts = new Map(roomCountRows.map((r) => [r.hotelId, parseInt(r.count, 10)]));
+
+    const blockedRows = await this.bookings
+      .createQueryBuilder('b')
+      .select('DISTINCT b.hotelId', 'hotelId')
+      .addSelect('b.roomId', 'roomId')
+      .where('b.roomId IS NOT NULL')
+      .andWhere("b.status != 'cancelled'")
+      .andWhere('b.checkIn < :checkOut AND b.checkOut > :checkIn', { checkIn, checkOut })
+      .getRawMany<{ hotelId: string; roomId: string }>();
+    const blockedByHotel = new Map<string, Set<string>>();
+    for (const row of blockedRows) {
+      if (!blockedByHotel.has(row.hotelId)) blockedByHotel.set(row.hotelId, new Set());
+      blockedByHotel.get(row.hotelId)!.add(row.roomId);
+    }
+
     const enriched: HotelWithAvailability[] = [];
     for (const hotel of list) {
-      const roomsAvailable = await this.freeRoomCount(hotel.id, checkIn, checkOut);
+      const total = roomCounts.get(hotel.id) ?? 0;
+      const blocked = blockedByHotel.get(hotel.id)?.size ?? 0;
+      const roomsAvailable = Math.max(0, total - blocked);
       if (query.availableOnly === 'true' && roomsAvailable === 0) continue;
       enriched.push({ ...hotel, pricePerNight: Number(hotel.pricePerNight), rating: Number(hotel.rating), roomsAvailable });
     }
@@ -81,6 +116,7 @@ export class HotelsService {
     if (!hotel) throw new NotFoundException('Hotel not found');
     const ci = checkIn || new Date().toISOString().slice(0, 10);
     const co = checkOut || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    HotelsService.assertValidRange(ci, co);
     const rooms = await this.rooms.find({ where: { hotelId: id }, order: { pricePerNight: 'DESC' } });
     const blocked = await this.blockedRoomIds(id, ci, co);
     const roomsWithAvailability: RoomWithAvailability[] = rooms.map((r) => ({
@@ -107,6 +143,10 @@ export class HotelsService {
     const startDate = start || new Date().toISOString().slice(0, 10);
     const span = Math.min(Math.max(days, 1), 186);
     const endDate = new Date(Date.parse(startDate) + span * 86400000).toISOString().slice(0, 10);
+    if (roomId) {
+      const room = await this.rooms.findOneBy({ id: roomId, hotelId });
+      if (!room) throw new NotFoundException('Room not found at this hotel');
+    }
     const totalRooms = roomId ? 1 : await this.rooms.countBy({ hotelId });
 
     const cacheKey = `hotels:calendar:${hotelId}:${roomId || 'all'}:${startDate}:${span}`;

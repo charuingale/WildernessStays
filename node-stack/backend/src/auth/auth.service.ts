@@ -24,7 +24,18 @@ const b64url = (buf: Buffer | string) =>
 @Injectable()
 export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
-  private readonly secret = process.env.JWT_SECRET || 'wilderness-dev-secret-change-me';
+  private readonly secret = AuthService.resolveSecret();
+
+  /** Known dev fallback is refused in production (CodeRabbit: critical). */
+  private static resolveSecret(): string {
+    const configured = process.env.JWT_SECRET;
+    if (configured && configured.trim()) return configured;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET must be configured in production');
+    }
+    new Logger(AuthService.name).warn('JWT_SECRET not set — using a dev-only default');
+    return 'wilderness-dev-secret-change-me';
+  }
   private readonly ttlSeconds = 7 * 24 * 3600; // 7 days
 
   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
@@ -96,14 +107,21 @@ export class AuthService implements OnModuleInit {
   async register(name: string, email: string, password: string) {
     const existing = await this.users.findOneBy({ email: email.toLowerCase() });
     if (existing) throw new ConflictException('An account with this email already exists');
-    const user = await this.users.save(
-      this.users.create({
-        name: name.trim(),
-        email: email.toLowerCase(),
-        passwordHash: this.hashPassword(password),
-        role: 'guest',
-      }),
-    );
+    let user: User;
+    try {
+      user = await this.users.save(
+        this.users.create({
+          name: name.trim(),
+          email: email.toLowerCase(),
+          passwordHash: this.hashPassword(password),
+          role: 'guest',
+        }),
+      );
+    } catch (err: any) {
+      // Unique-index race on concurrent registrations -> 409, not 500.
+      if (err?.code === '23505') throw new ConflictException('An account with this email already exists');
+      throw err;
+    }
     return { token: this.sign(user), user: this.publicUser(user) };
   }
 

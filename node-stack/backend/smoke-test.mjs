@@ -101,14 +101,20 @@ ok('guest deletes own booking', r.status === 200);
 const far = { ...payload, checkIn: day(200), checkOut: day(202) };
 r = await req('/bookings', { method: 'POST', token: guest, body: JSON.stringify(far) });
 const farId = r.body.id;
+const farTotal = Number(r.body.totalPrice);
 r = await req(`/bookings/${farId}/cancellation-quote`, { token: guest });
 ok('quote: free cancellation when 7+ days out', r.status === 200 && r.body.cancellable === true && r.body.feePercent === 0 && Number(r.body.refund) > 0);
 r = await req(`/bookings/${farId}/cancel`, { method: 'POST', token: guest });
-ok('cancel: full refund recorded', r.status === 200 && r.body.status === 'cancelled' && Number(r.body.cancellationFee) === 0 && !!r.body.refundRef);
+ok('cancel: full refund recorded',
+  r.status === 200 && r.body.status === 'cancelled' && Number(r.body.cancellationFee) === 0
+  && Math.abs(Number(r.body.refundAmount) - farTotal) < 0.02 && !!r.body.refundRef);
 await req(`/bookings/${farId}`, { method: 'DELETE', token: guest });
 
 r = await req(`/hotels/${hotel.id}?checkIn=${day(3)}&checkOut=${day(5)}`);
-const nearRoom = r.body.rooms.find((x) => x.available);
+const nearRoom = r.status === 200 && Array.isArray(r.body?.rooms)
+  ? r.body.rooms.find((x) => x.available)
+  : null;
+ok('setup: near-term room available for the 70% fee scenario', Boolean(nearRoom));
 if (nearRoom) {
   const near = { ...payload, roomId: nearRoom.id, checkIn: day(3), checkOut: day(5) };
   r = await req('/bookings', { method: 'POST', token: guest, body: JSON.stringify(near) });

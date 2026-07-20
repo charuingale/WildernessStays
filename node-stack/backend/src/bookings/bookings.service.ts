@@ -138,7 +138,7 @@ export class BookingsService {
 
     await this.hotelsService.invalidateCache();
     const full = await this.findOne(booking.id);
-    this.events.emitBookingCreated(full);
+    this.events.emitBookingCreated(this.eventView(full));
     this.events.emitAvailabilityChanged(dto.hotelId);
     return full;
   }
@@ -152,32 +152,23 @@ export class BookingsService {
       return this.cancel(id, user);
     }
 
+    // A cancelled booking has been refunded — reactivating it for free would
+    // be an unpaid stay. Rebooking means making a new reservation.
+    if (booking.status === 'cancelled' && dto.status && dto.status !== 'cancelled') {
+      throw new BadRequestException(
+        'Cancelled bookings cannot be reactivated — please make a new reservation',
+      );
+    }
+
     // Completed stays are immutable history for guests (admins may still correct records).
     const todayStr = new Date().toISOString().slice(0, 10);
     if (user.role !== 'admin' && booking.checkOut < todayStr) {
       throw new BadRequestException('This stay is in the past and can no longer be changed');
     }
+
     const merged = { ...booking, ...dto };
     const nights = this.nights(merged.checkIn, merged.checkOut);
 
-    // Re-check the room is free when the booking stays (or becomes) active.
-    if (merged.status !== 'cancelled' && booking.roomId) {
-      const clash = await this.bookings
-        .createQueryBuilder('b')
-        .where('b.roomId = :roomId', { roomId: booking.roomId })
-        .andWhere('b.id != :id', { id })
-        .andWhere("b.status != 'cancelled'")
-        .andWhere('b.checkIn < :checkOut AND b.checkOut > :checkIn', {
-          checkIn: merged.checkIn,
-          checkOut: merged.checkOut,
-        })
-        .getCount();
-      if (clash > 0) {
-        throw new ConflictException(
-          `${booking.room?.name || 'This room'} at ${booking.hotel.name} is already booked for those dates`,
-        );
-      }
-    }
     if (booking.room && merged.guests > booking.room.capacity) {
       throw new BadRequestException(
         `${booking.room.name} sleeps up to ${booking.room.capacity} guest(s)`,
@@ -187,18 +178,39 @@ export class BookingsService {
     const nightlyRate = Number(booking.room?.pricePerNight ?? booking.hotel.pricePerNight);
     merged.totalPrice = nightlyRate * nights;
 
-    // Re-activating a cancelled booking clears its cancellation record.
-    if (booking.status === 'cancelled' && merged.status !== 'cancelled') {
-      merged.cancelledAt = null;
-      merged.cancellationFee = null;
-      merged.refundAmount = null;
-      merged.refundRef = null;
+    // Clash check and save run in a transaction with the room row locked, so
+    // two concurrent reschedules cannot both pass (same guarantee as create()).
+    if (merged.status !== 'cancelled' && booking.roomId) {
+      await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+        await manager
+          .createQueryBuilder(Room, 'r')
+          .setLock('pessimistic_write')
+          .where('r.id = :roomId', { roomId: booking.roomId })
+          .getOne();
+        const clash = await manager
+          .createQueryBuilder(Booking, 'b')
+          .where('b.roomId = :roomId', { roomId: booking.roomId })
+          .andWhere('b.id != :id', { id })
+          .andWhere("b.status != 'cancelled'")
+          .andWhere('b.checkIn < :checkOut AND b.checkOut > :checkIn', {
+            checkIn: merged.checkIn,
+            checkOut: merged.checkOut,
+          })
+          .getCount();
+        if (clash > 0) {
+          throw new ConflictException(
+            `${booking.room?.name || 'This room'} at ${booking.hotel.name} is already booked for those dates`,
+          );
+        }
+        await manager.save(Booking, merged);
+      });
+    } else {
+      await this.bookings.save(merged);
     }
 
-    await this.bookings.save(merged);
     await this.hotelsService.invalidateCache();
     const full = await this.findOne(id);
-    this.events.emitBookingUpdated(full);
+    this.events.emitBookingUpdated(this.eventView(full));
     this.events.emitAvailabilityChanged(full.hotelId);
     return full;
   }
@@ -237,26 +249,46 @@ export class BookingsService {
     return this.quoteFor(booking);
   }
 
-  /** Cancel under the policy: refund what's due, keep the fee, free the room. */
+  /**
+   * Cancel under the policy: refund what's due, keep the fee, free the room.
+   * Runs in a transaction with a row lock so concurrent cancel requests are
+   * serialized (only one can refund), and the refund carries a stable
+   * idempotency key derived from the booking id.
+   */
   async cancel(id: string, user: JwtPayload): Promise<Booking> {
-    const booking = await this.findOne(id);
-    this.assertOwnership(booking, user);
-    const q = this.quoteFor(booking);
-    if (!q.cancellable) throw new BadRequestException(q.reason);
+    const pre = await this.findOne(id);
+    this.assertOwnership(pre, user);
 
-    const refund = await this.payments.refund(q.refund, booking.paymentRef);
-    booking.status = 'cancelled';
-    booking.cancelledAt = new Date();
-    booking.cancellationFee = q.fee;
-    booking.refundAmount = q.refund;
-    booking.refundRef = refund.ref;
-    await this.bookings.save(booking);
+    await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+      const booking = await manager
+        .createQueryBuilder(Booking, 'b')
+        .setLock('pessimistic_write')
+        .where('b.id = :id', { id })
+        .getOne();
+      if (!booking) throw new NotFoundException('Booking not found');
+
+      const q = this.quoteFor(booking);
+      if (!q.cancellable) throw new BadRequestException(q.reason);
+
+      const refund = await this.payments.refund(q.refund, booking.paymentRef, `cancel-${id}`);
+      booking.status = 'cancelled';
+      booking.cancelledAt = new Date();
+      booking.cancellationFee = q.fee;
+      booking.refundAmount = q.refund;
+      booking.refundRef = refund.ref;
+      await manager.save(booking);
+    });
 
     await this.hotelsService.invalidateCache();
     const full = await this.findOne(id);
-    this.events.emitBookingUpdated(full);
+    this.events.emitBookingUpdated(this.eventView(full));
     this.events.emitAvailabilityChanged(full.hotelId);
     return full;
+  }
+
+  /** Minimal payload for realtime broadcasts — no guest PII or payment refs. */
+  private eventView(b: Booking) {
+    return { id: b.id, hotelId: b.hotelId, roomId: b.roomId, status: b.status, checkIn: b.checkIn, checkOut: b.checkOut };
   }
 
   async remove(id: string, user: JwtPayload): Promise<{ deleted: true }> {
@@ -271,7 +303,12 @@ export class BookingsService {
 
   async exportCsv(query: QueryBookingsDto): Promise<string> {
     const rows = await this.findAll(query);
-    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const esc = (v: unknown) => {
+      let text = String(v ?? '');
+      // Neutralize spreadsheet formula injection (OWASP CSV injection)
+      if (/^[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
+    };
     const header = [
       'Booking ID', 'Hotel', 'Room', 'Location', 'Guest', 'Email', 'Phone',
       'Check-in', 'Check-out', 'Guests', 'Rooms', 'Total (CAD)', 'Status', 'Cancellation Fee', 'Refund', 'Payment Ref', 'Created',

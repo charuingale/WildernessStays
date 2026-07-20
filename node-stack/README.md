@@ -55,7 +55,7 @@ cancelled on or after the check-in date. Cancelled bookings record the fee, refu
 amount, refund reference, and timestamp; refunds go through Stripe when configured,
 mock references otherwise.
 
-```
+```text
 GET  /api/bookings/:id/cancellation-quote   preview fee & refund before confirming
 POST /api/bookings/:id/cancel               cancel under the policy
 ```
@@ -83,7 +83,7 @@ Or connect pgAdmin/DBeaver to `localhost:5432`, db `wilderness_stays`, user/pass
 
 ## API
 
-```
+```text
 GET    /api/health
 POST   /api/auth/register | /api/auth/login      GET /api/auth/me
 GET    /api/hotels?place=&minPrice=&maxPrice=&availableOnly=&checkIn=&checkOut=

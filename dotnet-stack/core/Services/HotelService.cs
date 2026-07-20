@@ -20,12 +20,19 @@ public class HotelService(AppDbContext db, CacheService cache)
         return ids.ToHashSet();
     }
 
+    /// <summary>Invalid stay ranges would report every room available and poison the cache.</summary>
+    private static void AssertValidRange(DateOnly ci, DateOnly co)
+    {
+        if (co <= ci) throw new DomainValidationException("checkOut must be after checkIn");
+    }
+
     public async Task<List<HotelSummary>> FindAllAsync(
         string? place, decimal? minPrice, decimal? maxPrice, bool availableOnly,
         DateOnly? checkIn, DateOnly? checkOut)
     {
         var ci = checkIn ?? Today;
         var co = checkOut ?? Today.AddDays(1);
+        AssertValidRange(ci, co);
 
         var cacheKey = $"hotels:{place}|{minPrice}|{maxPrice}|{availableOnly}|{ci:O}|{co:O}";
         var cached = await cache.GetAsync<List<HotelSummary>>(cacheKey);
@@ -46,10 +53,21 @@ public class HotelService(AppDbContext db, CacheService cache)
             .Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count);
 
+        // Batched: one query for all hotels' blocked rooms (previously one per hotel — N+1).
+        var overlapping = await db.Bookings.AsNoTracking()
+            .Where(b => b.RoomId != null && b.Status != "cancelled"
+                        && b.CheckIn < co && b.CheckOut > ci)
+            .Select(b => new { b.HotelId, RoomId = b.RoomId!.Value })
+            .Distinct()
+            .ToListAsync();
+        var blockedByHotel = overlapping
+            .GroupBy(x => x.HotelId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.RoomId).ToHashSet());
+
         var result = new List<HotelSummary>();
         foreach (var h in hotels)
         {
-            var blocked = await BlockedRoomIdsAsync(h.Id, ci, co);
+            var blocked = blockedByHotel.GetValueOrDefault(h.Id) ?? new HashSet<Guid>();
             var total = roomCounts.GetValueOrDefault(h.Id);
             var free = Math.Max(0, total - blocked.Count);
             if (availableOnly && free == 0) continue;
@@ -68,6 +86,7 @@ public class HotelService(AppDbContext db, CacheService cache)
 
         var ci = checkIn ?? Today;
         var co = checkOut ?? Today.AddDays(1);
+        AssertValidRange(ci, co);
         var blocked = await BlockedRoomIdsAsync(id, ci, co);
         var rooms = await db.Rooms.AsNoTracking()
             .Where(r => r.HotelId == id)
@@ -90,6 +109,8 @@ public class HotelService(AppDbContext db, CacheService cache)
         var startDate = start ?? Today;
         var span = Math.Clamp(days, 1, 186);
         var endDate = startDate.AddDays(span);
+        if (roomId.HasValue && !await db.Rooms.AnyAsync(r => r.Id == roomId.Value && r.HotelId == id))
+            return null; // nonexistent or foreign room -> 404 from the controller
         var totalRooms = roomId.HasValue ? 1 : await db.Rooms.CountAsync(r => r.HotelId == id);
 
         var cacheKey = $"hotels:calendar:{id}:{roomId?.ToString() ?? "all"}:{startDate:O}:{span}";

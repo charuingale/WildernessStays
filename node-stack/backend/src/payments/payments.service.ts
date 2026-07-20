@@ -14,6 +14,10 @@ export class PaymentsService {
 
   async charge(amountCad: number, description: string): Promise<{ ref: string; provider: string }> {
     if (!this.stripeKey) {
+      // Fail closed in production unless mock mode is explicitly allowed.
+      if (process.env.NODE_ENV === 'production' && process.env.ALLOW_MOCK_PAYMENTS !== 'true') {
+        throw new Error('Payments are not configured (set STRIPE_SECRET_KEY or ALLOW_MOCK_PAYMENTS=true)');
+      }
       const ref = `mock_pi_${randomUUID().slice(0, 12)}`;
       this.logger.log(`Mock payment of CAD ${amountCad.toFixed(2)} — ${ref}`);
       return { ref, provider: 'mock' };
@@ -42,8 +46,11 @@ export class PaymentsService {
     return { ref: intent.id, provider: 'stripe' };
   }
 
-  /** Refund (part of) a charge. Mock mode issues a mock reference. */
-  async refund(amountCad: number, paymentRef: string): Promise<{ ref: string; provider: string }> {
+  /**
+   * Refund (part of) a charge. Mock mode issues a mock reference.
+   * `operationId` becomes Stripe's idempotency key so retries can't double-refund.
+   */
+  async refund(amountCad: number, paymentRef: string, operationId?: string): Promise<{ ref: string; provider: string }> {
     if (amountCad <= 0) return { ref: 'no_refund_due', provider: 'none' };
     if (!this.stripeKey || !paymentRef || paymentRef.startsWith('mock_')) {
       const ref = `mock_re_${randomUUID().slice(0, 12)}`;
@@ -59,6 +66,7 @@ export class PaymentsService {
       headers: {
         Authorization: `Bearer ${this.stripeKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        ...(operationId ? { 'Idempotency-Key': operationId } : {}),
       },
       body,
     });

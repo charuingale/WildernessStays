@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using WildernessStays.Core.Contracts;
 using WildernessStays.Core.Data;
 using WildernessStays.Core.Models;
@@ -17,7 +18,15 @@ public class AuthService(AppDbContext db, TokenService tokens)
 
         var user = new User { Name = name.Trim(), Email = normalized, PasswordHash = PasswordService.Hash(password) };
         db.Users.Add(user);
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        {
+            // Unique-index race on concurrent registrations -> 409, not 500.
+            throw new ConflictException("An account with this email already exists");
+        }
         return new AuthResult(tokens.Sign(user), Public(user));
     }
 

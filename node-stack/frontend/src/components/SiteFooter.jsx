@@ -63,22 +63,22 @@ export default function SiteFooter() {
               <p className="footer-tag">Create a free account to book stays and manage your trips.</p>
               <form onSubmit={submit} noValidate>
                 <div className="field">
-                  <input aria-label="Name" placeholder="Your name" value={form.name}
+                  <input aria-label="Name" aria-invalid={!!errors.name} aria-describedby={errors.name ? 'fs-name-err' : undefined} placeholder="Your name" value={form.name}
                     className={errors.name ? 'invalid' : ''}
                     onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                  {errors.name && <span className="err">{errors.name}</span>}
+                  {errors.name && <span id="fs-name-err" role="alert" className="err">{errors.name}</span>}
                 </div>
                 <div className="field">
-                  <input aria-label="Email" type="email" placeholder="you@example.com" value={form.email}
+                  <input aria-label="Email" aria-invalid={!!errors.email} aria-describedby={errors.email ? 'fs-email-err' : undefined} type="email" placeholder="you@example.com" value={form.email}
                     className={errors.email ? 'invalid' : ''}
                     onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                  {errors.email && <span className="err">{errors.email}</span>}
+                  {errors.email && <span id="fs-email-err" role="alert" className="err">{errors.email}</span>}
                 </div>
                 <div className="field">
-                  <input aria-label="Password" type="password" placeholder="Choose a password" value={form.password}
+                  <input aria-label="Password" aria-invalid={!!errors.password} aria-describedby={errors.password ? 'fs-password-err' : undefined} type="password" placeholder="Choose a password" value={form.password}
                     className={errors.password ? 'invalid' : ''}
                     onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  {errors.password && <span className="err">{errors.password}</span>}
+                  {errors.password && <span id="fs-password-err" role="alert" className="err">{errors.password}</span>}
                 </div>
                 <button type="submit" className="btn btn-timber" disabled={authBusy} style={{ width: '100%' }}>
                   {authBusy ? 'Creating account…' : 'Sign up free'}

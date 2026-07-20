@@ -425,15 +425,20 @@ export const useStore = create(
               get().toast(q?.reason || 'Booking not found', 'error');
               throw new Error(q?.reason || 'not cancellable');
             }
-            set((s) => ({
-              submitting: false,
-              localBookings: s.localBookings.map((b) =>
+            set((s) => {
+              const stamp = (b) =>
                 b.id === id
                   ? { ...b, status: 'cancelled', cancelledAt: new Date().toISOString(),
                       cancellationFee: q.fee, refundAmount: q.refund, refundRef: `mock_re_local` }
-                  : b,
-              ),
-            }));
+                  : b;
+              // My Trips renders myBookings, so it must be stamped in the same
+              // transition — offline refresh skips loadMyBookings().
+              return {
+                submitting: false,
+                localBookings: s.localBookings.map(stamp),
+                myBookings: s.myBookings.map(stamp),
+              };
+            });
             get().toast(`Cancelled — ${q.refund.toFixed(2)} CAD refunded (saved locally)`, 'success');
             get().refreshBookingViews();
             get().loadHotels({ silent: true });

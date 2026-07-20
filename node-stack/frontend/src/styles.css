@@ -571,7 +571,15 @@ button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation
 
 @media (max-width: 700px) {
   /* Admin bookings: table becomes stacked cards */
-  .booking-table thead { display: none; }
+  /* visually hidden, but still available to screen readers */
+  .booking-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   table.booking-table { min-width: 0; }
   .booking-table, .booking-table tbody, .booking-table tr, .booking-table td { display: block; width: 100%; }
   .booking-table tr { padding: 8px 0; border-bottom: 6px solid var(--parchment); }

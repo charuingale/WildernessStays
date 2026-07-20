@@ -31,8 +31,14 @@ function CancelStayModal({ booking, onClose }) {
     } catch { /* toast shown by store */ }
   };
 
+  // While the cancellation is in flight, Escape/overlay/"Keep my booking"
+  // must not imply the booking was kept.
+  const close = () => {
+    if (!submitting) onClose();
+  };
+
   return (
-    <Modal title={`Cancel your stay at ${booking.hotel?.name}?`} onClose={onClose}>
+    <Modal title={`Cancel your stay at ${booking.hotel?.name}?`} onClose={close}>
       {loading ? (
         <div className="spinner" role="status" aria-label="Checking the cancellation policy" />
       ) : !quote ? (
@@ -64,7 +70,7 @@ function CancelStayModal({ booking, onClose }) {
             <div className="quote-row refund"><span>Your refund</span><span>{formatMoney(quote.refund)}</span></div>
           </div>
           <div className="modal-actions">
-            <button className="btn btn-ghost" onClick={onClose}>Keep my booking</button>
+            <button className="btn btn-ghost" onClick={close} disabled={submitting}>Keep my booking</button>
             <button className="btn btn-danger" onClick={confirm} disabled={submitting}>
               {submitting ? 'Cancelling…' : `Cancel & refund ${formatMoney(quote.refund)}`}
             </button>

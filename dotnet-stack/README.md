@@ -12,7 +12,7 @@ Self-contained implementation: **ASP.NET Core 8 + EF Core + PostgreSQL + Redis +
 
 ## Architecture (layered)
 
-```
+```text
 core/      WildernessStays.Core  — class library, packaged as a NuGet package
            entities · EF Core DbContext · seeding · booking rules · availability
            engine · auth · caching · payments · domain exceptions · event abstraction
@@ -20,7 +20,7 @@ backend/   WildernessStays.Api   — thin ASP.NET Core host
            controllers · SignalR hub · JWT wiring · exception→HTTP mapping
 ```
 
-The API references the library as a **NuGet package** (`WildernessStays.Core 1.0.0`)
+The API references the library as a **NuGet package** (version pinned in `backend/WildernessStays.Api.csproj`, currently `1.3.0`)
 served from the `local-packages/` folder feed (see `nuget.config`). After changing
 library code, repack and bump/clear the cache:
 
@@ -73,7 +73,7 @@ cancelled on or after the check-in date. Cancelled bookings record the fee, refu
 amount, refund reference, and timestamp; refunds go through Stripe when configured,
 mock references otherwise.
 
-```
+```text
 GET  /api/bookings/:id/cancellation-quote   preview fee & refund before confirming
 POST /api/bookings/:id/cancel               cancel under the policy
 ```

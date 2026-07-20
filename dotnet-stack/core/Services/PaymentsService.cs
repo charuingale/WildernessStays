@@ -15,6 +15,8 @@ public class PaymentsService(WildernessOptions options, ILogger<PaymentsService>
     {
         if (string.IsNullOrWhiteSpace(options.StripeSecretKey))
         {
+            if (!options.AllowMockPayments)
+                throw new InvalidOperationException("Payments are not configured (set Stripe:SecretKey or Payments:AllowMock)");
             var mockRef = $"mock_pi_{Guid.NewGuid().ToString("N")[..12]}";
             logger.LogInformation("Mock payment of CAD {Amount:F2} — {Ref}", amountCad, mockRef);
             return (mockRef, "mock");
@@ -40,8 +42,12 @@ public class PaymentsService(WildernessOptions options, ILogger<PaymentsService>
         return (intent.RootElement.GetProperty("id").GetString()!, "stripe");
     }
 
-    /// <summary>Refund (part of) a charge. Mock mode issues a mock reference.</summary>
-    public async Task<(string Ref, string Provider)> RefundAsync(decimal amountCad, string? paymentRef)
+    /// <summary>
+    /// Refund (part of) a charge. Mock mode issues a mock reference.
+    /// <paramref name="operationId"/> becomes Stripe's idempotency key so
+    /// retries cannot double-refund.
+    /// </summary>
+    public async Task<(string Ref, string Provider)> RefundAsync(decimal amountCad, string? paymentRef, string? operationId = null)
     {
         if (amountCad <= 0) return ("no_refund_due", "none");
         if (string.IsNullOrWhiteSpace(options.StripeSecretKey) || paymentRef is null || paymentRef.StartsWith("mock_"))
@@ -53,6 +59,7 @@ public class PaymentsService(WildernessOptions options, ILogger<PaymentsService>
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.stripe.com/v1/refunds");
         request.Headers.Authorization = new("Bearer", options.StripeSecretKey);
+        if (!string.IsNullOrEmpty(operationId)) request.Headers.Add("Idempotency-Key", operationId);
         request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["payment_intent"] = paymentRef,

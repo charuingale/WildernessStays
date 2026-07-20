@@ -10,11 +10,23 @@ using WildernessStays.Core.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Core library: data layer + business logic (from the WildernessStays.Core NuGet) ----
+var configuredSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(configuredSecret))
+{
+    // Never fall back to a publicly-known signing key in production.
+    if (builder.Environment.IsProduction())
+        throw new InvalidOperationException("Jwt:Secret must be configured in production");
+    configuredSecret = "wilderness-dotnet-dev-secret-change-me-0123456789";
+}
+
 var coreOptions = new WildernessOptions
 {
-    JwtSecret = builder.Configuration["Jwt:Secret"] ?? new WildernessOptions().JwtSecret,
+    JwtSecret = configuredSecret,
     RedisConnection = builder.Configuration["Redis"] ?? "localhost:6380",
     StripeSecretKey = builder.Configuration["Stripe:SecretKey"],
+    // Mock payments must be an explicit choice in production.
+    AllowMockPayments = builder.Configuration.GetValue<bool?>("Payments:AllowMock")
+        ?? !builder.Environment.IsProduction(),
 };
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IBookingEvents, SignalRBookingEvents>();

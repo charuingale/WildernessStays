@@ -1,4 +1,9 @@
-const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+const esc = (v) => {
+  let text = String(v ?? '');
+  // Neutralize spreadsheet formula injection (OWASP CSV injection)
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 export function bookingsToCsv(bookings) {
   const header = [
