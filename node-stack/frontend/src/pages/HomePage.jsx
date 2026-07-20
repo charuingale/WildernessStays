@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import TrailGuideChat from '../components/TrailGuideChat';
 
 const HERO_IMG =
   'https://images.pexels.com/videos/20600550/4k-alberta-banff-blue-20600550.jpeg?auto=compress&w=1800';
@@ -162,6 +163,8 @@ export default function HomePage() {
           </div>
         </section>
       </main>
+
+      <TrailGuideChat />
     </>
   );
 }
