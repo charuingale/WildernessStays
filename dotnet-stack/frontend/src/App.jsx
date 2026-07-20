@@ -77,18 +77,12 @@ export default function App() {
       <aside className={`drawer ${drawerOpen ? 'open' : ''}`} aria-hidden={!drawerOpen}>
         <div className="drawer-head">
           <h2>Wilderness Stays</h2>
-          <p>Wilderness Refined</p>
+          <p>Deeper exploration</p>
         </div>
         <nav>
-          <NavLink to="/" end><span>🏔️</span> Home</NavLink>
-          <NavLink to="/search"><span>🔍</span> Find a Lodge</NavLink>
-          <NavLink to="/trips"><span>🎒</span> My Trips</NavLink>
-          {showDesk && <NavLink to="/admin"><span>🗂️</span> Reservations Desk</NavLink>}
           <NavLink to="/concierge"><span>🛎️</span> Concierge</NavLink>
           <NavLink to="/portfolio"><span>🌲</span> Portfolio</NavLink>
           <NavLink to="/sustainability"><span>🍁</span> Sustainability</NavLink>
-          <NavLink to="/about"><span>🌄</span> About Us</NavLink>
-          <NavLink to="/contact"><span>✉️</span> Contact Us</NavLink>
         </nav>
         <div className="drawer-foot">
           {user ? `Signed in as ${user.name}` : 'Browsing as a visitor'}<br />
