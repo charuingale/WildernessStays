@@ -4,11 +4,13 @@ import { useStore } from '../store/useStore';
 import { todayISO, formatMoney, formatDate } from '../utils/dates';
 
 const DESTINATIONS = ['Banff', 'Lake Louise', 'Jasper', 'Whistler', 'Tofino', 'Canmore', 'Mont-Tremblant', 'Anywhere'];
+/* Budget is a spending CEILING, not a bracket: picking "$350 – $500" means
+   "up to $500", and "$500+" means no limit — cheaper lodges always qualify. */
 const BUDGETS = [
-  { label: 'Under $350', min: '', max: 350 },
-  { label: '$350 – $500', min: 350, max: 500 },
-  { label: '$500+', min: 500, max: '' },
-  { label: 'Surprise me', min: '', max: '' },
+  { label: 'Under $350', max: 350 },
+  { label: '$350 – $500', max: 500 },
+  { label: '$500+', max: '' },
+  { label: 'Surprise me', max: '' },
 ];
 
 /** Next Friday→Sunday from today. */
@@ -66,14 +68,14 @@ export default function TrailGuideChat() {
   const chooseGuests = (guests) => {
     say('user', `${guests} guest${guests > 1 ? 's' : ''}`);
     setAnswers((a) => ({ ...a, guests }));
-    if (guests >= 5) say('bot', "Good news — every lodge has a family room that sleeps six. What's your budget per night?");
-    else say('bot', "Almost there — what's your budget per night?");
+    if (guests >= 5) say('bot', "Good news — every lodge has a family room that sleeps six. What's the most you'd like to spend per night?");
+    else say('bot', "Almost there — what's the most you'd like to spend per night?");
     setStep('budget');
   };
 
   const chooseBudget = async (b) => {
     say('user', b.label);
-    const next = { ...answers, minPrice: b.min, maxPrice: b.max };
+    const next = { ...answers, minPrice: '', maxPrice: b.max };
     setAnswers(next);
     setStep('results');
     setSearching(true);
@@ -82,7 +84,7 @@ export default function TrailGuideChat() {
     // Apply the exact same filters the search page uses, then read the results.
     setFilters({
       place: next.place,
-      minPrice: b.min,
+      minPrice: '',
       maxPrice: b.max,
       availableOnly: true,
       checkIn: dates.checkIn,
