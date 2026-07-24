@@ -9,6 +9,7 @@ import MyTripsPage from './pages/MyTripsPage';
 import AuthPage from './pages/AuthPage';
 import { ConciergePage, PortfolioPage, SustainabilityPage, AboutPage, ContactPage, NotFoundPage } from './pages/StaticPages';
 import SiteFooter from './components/SiteFooter';
+import AgentConcierge from './components/AgentConcierge';
 
 function ToastStack() {
   const toasts = useStore((s) => s.toasts);
@@ -123,6 +124,8 @@ export default function App() {
           </NavLink>
         )}
       </nav>
+
+      <AgentConcierge />
 
       <ToastStack />
     </>

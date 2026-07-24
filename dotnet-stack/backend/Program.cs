@@ -1,6 +1,9 @@
 using System.Text.Json.Serialization;
+using Amazon;
+using Amazon.BedrockRuntime;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using WildernessStays.Api.Agent;
 using WildernessStays.Api.Hubs;
 using WildernessStays.Core;
 using WildernessStays.Core.Data;
@@ -31,6 +34,23 @@ var coreOptions = new WildernessOptions
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IBookingEvents, SignalRBookingEvents>();
 builder.Services.AddWildernessStaysCore(builder.Configuration.GetConnectionString("Default")!, coreOptions);
+
+// ---- Concierge agent (Amazon Bedrock) ----
+var bedrockOptions = new BedrockOptions
+{
+    Enabled = builder.Configuration.GetValue<bool>("Bedrock:Enabled"),
+    Region = builder.Configuration["Bedrock:Region"] ?? "us-east-1",
+    ModelId = builder.Configuration["Bedrock:ModelId"] ?? "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    MaxTokens = builder.Configuration.GetValue<int?>("Bedrock:MaxTokens") ?? 1024,
+    MaxToolIterations = builder.Configuration.GetValue<int?>("Bedrock:MaxToolIterations") ?? 6,
+};
+builder.Services.AddSingleton(bedrockOptions);
+// Credentials resolve from the default AWS chain (env vars, shared profile, or IAM role).
+// Constructing the client makes no network call, so this is safe even when the agent is off.
+builder.Services.AddSingleton<IAmazonBedrockRuntime>(_ =>
+    new AmazonBedrockRuntimeClient(RegionEndpoint.GetBySystemName(bedrockOptions.Region)));
+builder.Services.AddScoped<AgentTools>();
+builder.Services.AddScoped<BedrockConciergeService>();
 
 // ---- HTTP concerns ----
 builder.Services
