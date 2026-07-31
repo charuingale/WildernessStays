@@ -13,6 +13,9 @@
     <!-- Amazon Bedrock runtime for the concierge agent (InvokeModel). Run
          `dotnet add package AWSSDK.BedrockRuntime` to pin the latest patch. -->
     <PackageReference Include="AWSSDK.BedrockRuntime" Version="4.0.100.6" />
+    <!-- Official MCP C# SDK (HTTP hosting). Run `dotnet add package
+         ModelContextProtocol.AspNetCore` to pin the latest. -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.*" />
     <!-- Business logic + data layer, consumed as a NuGet package from the local feed -->
     <PackageReference Include="WildernessStays.Core" Version="1.3.0" />
   </ItemGroup>

@@ -70,6 +70,14 @@ builder.Services.Configure<ApiBehaviorOptions>(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ---- MCP server: exposes read-only lodge tools to external AI clients over HTTP at /mcp.
+// Stateless = true because these tools don't need server-to-client calls (sampling/elicitation).
+// Tools are discovered from [McpServerToolType] classes in this assembly (see Mcp/LodgeMcpTools.cs).
+builder.Services
+    .AddMcpServer()
+    .WithHttpTransport(o => o.Stateless = true)
+    .WithToolsFromAssembly();
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -121,6 +129,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<EventsHub>("/hubs/events");
+app.MapMcp("/mcp");   // MCP endpoint (Streamable HTTP) — connect Claude Desktop / MCP Inspector here
 
 // Create database if missing, then seed hotels/rooms/users/bookings.
 using (var scope = app.Services.CreateScope())
